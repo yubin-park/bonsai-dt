@@ -1,44 +1,38 @@
-<div style="background-color: #1f1f1f; padding: 30px;">
-<div style="color: #34c232; font-size: 52pt; font-weight: bold">
-bonsai 
-</div>
-<div style="color: #34c232; font-size: 10pt"> 
-PROGRAMMABLE DECISION TREE
-</div>
-</div>
-
-# Bonsai Project
-
-Bonsai is a "programmable" (or "extremely customizable") decision tree. 
+Bonsai-DT (or Bonsai in short) is a "programmable" decision tree framework. 
 Using Bonsai, you can quickly design/build new decision tree algorithms simply by defining two functions:
 
 - `find_split()`
 - `is_leaf()`
 
-The intent of this project is to provide a quick testing bed for various decision tree ideas, rather than improve the speed or scalability of decision tree algorithms; although the speed of Bonsai can be comparable with many exisiting implementations.
+The intent of this project is to provide a quick testing bed for various decision tree ideas.
+The project does not primarily focus on the speed or scalability of decision tree algorithms; 
+although the speed of Bonsai can be comparable with many exisiting implementations.
 
 Many decision trees, including the ones with information gain and gini impurity, are already implemented and available in Bonsai.
-Even complex tree models, such as Gradient Boosting, Random Forests and [PaloBoost](), are available in Bonsai.
-For more information, please take a look at [our examples](tests/).
+Even complex tree models, such as Gradient Boosting, Random Forests and [PaloBoost](), are available in the Bonsai templates.
+If you want to see the full list of the Bonsai templates, please read [the Model Templates section](#model-templates).
 
-## Table of Contents
 
-0. [Installing](#Installing)
-0. [Background](#Background)
-0. [Design Functions](#Design-Functions)
-0. [Code Examples](#Code-Examples)
-0. [Glossaries](#Glossaries)
-0. [Authors](#Authors)
-0. [License](#License)
+## Contents
+
+0. [Installing](#installing)
+0. [Background](#background)
+0. [Design Functions](#design-functions)
+0. [Code Examples](#code-examples)
+0. [Model Templates](#model-templates)
+0. [Glossaries](#glossaries)
+0. [Authors](#authors)
+0. [License](#license)
 
 ## Installing
 
 - Required: `numpy` and `cython`
 - Run `python setup.py develop`
+- NOTE: Bonsai is still under rapid development. Please use this at your own discretion.
 
 ## Background
 
-Decision tree is a class of recursive data partitioning algorithms. 
+Decision tree is a recursive data partitioning algorithm. 
 Some well-known algorithms include [CART (Classification and Regression Trees)](https://en.wikipedia.org/wiki/Predictive_analytics#Classification_and_regression_trees_.28CART.29), [C4.5](https://en.wikipedia.org/wiki/C4.5_algorithm), [ID3](https://en.wikipedia.org/wiki/ID3_algorithm), and [CHAID](https://en.wikipedia.org/wiki/Chi-square_automatic_interaction_detection). 
 Although each decision tree may look differerent, without loss of generality, most trees have the following struture:
 
@@ -69,8 +63,8 @@ Based on the best pair of splitting variable and value, the dataset `(X, y)` is 
 We repeat the above process on each partitioned dataset recursively.
 
 The properties of decision tree are primarily determined by the two functions:
-- `find_split(X, y)`: This function decides which variable/value to split on. For example, C4.5 and ID3 use Information Gain using Shannon Entropy, and CART use the Gini impurity measure to choose a splitting variable. 
-- `is_leaf(X, y)`: This function controls when to stop growing the tree. For example, one can grow the tree till its depth is smaller than 4, or its node size is smaller than 30.
+- `find_split()`: This function decides which variable/value to split on. For example, C4.5 and ID3 use Information Gain using Shannon Entropy, and CART use the Gini impurity measure to choose a splitting variable. 
+- `is_leaf()`: This function controls when to stop growing the tree. For example, one can grow the tree till its depth is smaller than 4, or its node size is smaller than 30.
 
 Many decision tree algorithms out there provide a set of parameters to control the behavior of these two functions. 
 Note that, in Bonsai, we ask users to write these **two functions from scratch**.
@@ -136,12 +130,42 @@ def is_leaf(branch, branch_parent):
         return False
 ```
 
+### Putting Things Together
+
+With the `find_split` and `is_leaf` implemented, now you can put these together to make your custom decision tree as follows:
+
+```python
+from ..core.bonsai import Bonsai
+import numpy as np
+
+class MyTree(Bonsai):
+
+    def __init__(self):
+
+        def find_split(avc):
+            var_left = avc[:,5]/avc[:,3] - np.square(avc[:,4]/avc[:,3])
+            var_right = avc[:,8]/avc[:,6] - np.square(avc[:,7]/avc[:,6])
+            varsum = avc[:,3] * var_left  + avc[:,6] * var_right
+            min_idx = np.argsort(varsum)[0]
+            return {"selected": avc[min_idx,:]}
+
+        def is_leaf(branch, branch_parent):
+            if branch["depth"] > 2:
+                return True
+            else:
+                return False
+
+        Bonsai.__init__(self, find_split, is_leaf)
+```
+
+Now, you can use `MyTree` just by importing the class in your project. 
 
 ## Code Examples
 
-### Using Pre-packaged Templates
+### Using a Model Template
 
-Take a look at the test scripts under the `tests/` folder. 
+You can use the model templates already built in Bonsai. 
+The model templates implemente various decision trees, so you can just import and use them right away.
 A regression tree example is as follows:
 
 ```python
@@ -168,24 +192,93 @@ y_hat = model.predict(X_test)
 rmse = np.sqrt(np.mean((y_test - y_hat)**2))
 ```
 
-### Designing Your Own Bonsai
+Available model templates are listed in [the next section](#model-templates).
+Also, take a look at the test scripts under [the tests folder](tests/). 
 
-To Be Added (TBA)
+### Interpreting a Trained Bonsai Tree
+
+In Bonsai, you can easily check the details of a trained tree:
+
+```python
+from __future__ import print_function
+from bonsai.base.regtree import RegTree
+from sklearn.datasets import make_friedman1
+import json
+X, y = make_friedman1(n_samples=10000) 
+model = RegTree(max_depth=1)
+model.fit(X, y)
+print(json.dumps(model.dump(), indent=2))
+```
+
+This script will output the trained tree in the form of an array of leaf nodes. Here is an example of the output:
+
+```json
+[
+  {
+    "is_leaf": true, 
+    "eqs": [
+      {
+        "svar": 3, 
+        "missing": 1, 
+        "sval": 0.49608099474494854, 
+        "op": "<"
+      }
+    ], 
+    "depth": 1, 
+    "n_samples": 5031.0, 
+    "y": 11.798433612486887, 
+  }, 
+  {
+    "is_leaf": true, 
+    "eqs": [
+      {
+        "svar": 3, 
+        "missing": 0, 
+        "sval": 0.49608099474494854, 
+        "op": ">="
+      }
+    ], 
+    "depth": 1, 
+    "n_samples": 4969.0, 
+    "y": 16.969889465743922, 
+  }
+]
+```
+
+This is a depth-1 tree, so you have two leaves in the array.
+In each leaf, you see `eqs` that stores the logical rules for the leaf.
+Also, you see `y`, which indicates the node value or predicted value for the leaf.
+All Bonsai-derived trees would have this form of output.
+
+## Model Templates
+
+Here are some Bonsai templates:
+
+- [Regression Tree](bonsai/base/regtree.py) implements the regression tree in CART [(src)](bonsai/base/regtree.py) [(usage)](tests/regtree.py)
+- [Alpha Tree](bonsai/base/alphatree.py) implements the [Alpha tree (paper)](https://arxiv.org/abs/1606.05325) [(src)](bonsai/base/alphatree.py) [(usage)](tests/alphatree.py)
+- [C45 Tree](bonsai/base/c45tree.py) implements a C4.5-like tree using the alpha tree. The tree uses the information gain for its splitting criterion [(src)](bonsai/base/c45tree.py)
+- [Gini Tree](bonsai/base/ginitree.py) implements the classification tree in CART using the alpha tree [(src)](bonsai/base/ginitree.py)
+- [XGBoost Base Tree](bonsai/base/xgbtree.py) implements the base learner of [XGBoost (paper)](https://github.com/dmlc/xgboost) [(src)](bonsai/base/xgbtree.p)
+- [Friedman Tree](bonsai/base/friedmantree.py) implements the base learner of [the original Gradient Boosting Machine paper](https://statweb.stanford.edu/~jhf/ftp/trebst.pdf) [(src)](bonsai/base/friedmantree.py)
+- [Gradient Boosting](bonsai/ensemble/gbm.py) implements the [Stochastic Gradient TreeBoost (paper)](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf) [(src)](bonsai/ensemble/gbm.py) [(usage)](tests/gbm.py)
+- [Random Forests](bonsai/ensemble/randomforests.py) implements the [Random Forests (paper)](https://www.stat.berkeley.edu/~breiman/randomforest2001.pdf) [(src)](bonsai/ensemble/randomforests.py) [(usage)](tests/randomforests.py)
+- [PaloBoost](bonsai/ensemble/paloboost.py) implements the [PaloBoost (paper)]() [(src)](bonsai/ensemble/paloboost.py) [(research)](research/paloboost.ipynb)
 
 ## Glossaries 
 
-Deep Dive of Cython Code
+Variable/function names that are used in the source code:
 
-- `canvas_dim`: TBA
-- `sketch`: TBA
-- `canvas`: TBA
-- `avc`: TBA
-- `setup canvas`: TBA
-- `erase canvas`: TBA
+- `avc`: AVC stands for Attribute-Value Classlabel Group. 
+- `canvas`: Canvas is a numpy array that stores AVC. 
+- `canvas_dim`: The dimension of Canvas. #rows x #columns
+- `setup_canvas`: Setting up a canvas for AVC. 
+- `sketch`: Sketching refers to a process of filling AVC values to Canvas. We scan a dataset and construct statistics relevant to AVC, and fill those values to a canvas one by one. We thought the process resembles skteching in paiting - rapid drawing for setting up a blueprint.
+- `erase_canvas`: Erase the values in a canvas.
 
 ## Authors
 
-- Yubin Park
+- Yubin Park, PhD
+- If you want to contribute, please contact Yubin
 
 ## License
 
