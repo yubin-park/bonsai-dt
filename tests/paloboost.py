@@ -17,10 +17,7 @@ import time
 
 def test_regression():
 
-    X, y = make_friedman1(n_samples=1000, noise=5) 
-    #y = y + 2.0*np.random.randn(y.shape[0])
-    #X, y = make_friedman2(n_samples=100000) 
-    #X, y = make_friedman3(n_samples=100000) 
+    X, y = make_friedman1(n_samples=100000, noise=5) 
     n, m = X.shape
     X_train, X_test, y_train, y_test = train_test_split(X, y, 
                                             test_size=0.5)
@@ -127,5 +124,5 @@ def test_classification():
 if __name__=="__main__":
 
     test_regression()
-    test_classification()
+    #test_classification()
 

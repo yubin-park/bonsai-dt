@@ -206,6 +206,29 @@ rmse = np.sqrt(np.mean((y_test - y_hat)**2))
 Available model templates are listed in [the Model Templates section](#model-templates).
 Also, take a look at the test scripts under [the tests folder](tests/) to see how to use these templates. 
 
+### Running a Test Script
+
+The best to way to get used to Bonsai is try running the test scripts.
+To run the test scripts, if you just go to the tests folder, and run a Python script in the folder.
+
+```
+$ cd tests
+$ python paloboost.py 
+
+# Test Regression
+-----------------------------------------------------
+ model_name     train_time     predict_time   rmse   
+-----------------------------------------------------
+ baseline       -              -              6.99054
+ gbm            3.24681 sec    0.32504 sec    5.76867
+ palobst        4.15213 sec    0.28674 sec    5.14846
+ sklearn        6.36740 sec    0.07248 sec    5.68470
+-----------------------------------------------------
+```
+
+This test script tests the PaloBoost algorithm using the Friedman's simulated data (regression task). 
+As can be seen, the test script prints the training time, predictio tiem, and Root Mean Squared Errors (RMSE) measured on hold-out data.
+
 ### Interpreting a Trained Bonsai Tree
 
 In Bonsai, you can easily check the details of a trained tree:
