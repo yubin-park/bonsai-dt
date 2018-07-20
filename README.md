@@ -1,17 +1,15 @@
-Bonsai-DT (or Bonsai in short) is a "programmable" decision tree framework. 
-Using Bonsai, you can quickly design/build new decision tree algorithms simply by defining two functions:
+**Bonsai-DT** (or **Bonsai** in short form) is a *programmable* decision tree framework written in Python. 
+Using Bonsai, you can quickly design and build new decision tree algorithms just by writing these two functions, rather than specifying a laundrylist of parameters:
 
 - `find_split()`
 - `is_leaf()`
 
 The intent of this project is to provide a quick testing bed for various decision tree ideas.
-The project does not primarily focus on the speed or scalability of decision tree algorithms; 
-although the speed of Bonsai can be comparable with many exisiting implementations.
+Although the speed of Bonsai is comparable to other implementations, we note that the speed and scalability of the framework are not the primary focus.
 
-Many decision trees, including the ones with information gain and gini impurity, are already implemented and available in Bonsai.
-Even complex tree models, such as Gradient Boosting, Random Forests and [PaloBoost](), are available in the Bonsai templates.
-If you want to see the full list of the Bonsai templates, please read [the Model Templates section](#model-templates).
-
+Many decision trees, such as C4.5 and CART, are already implemented and available in the Bonsai templates.
+Even ensemble models, such as Gradient Boosting, Random Forests and [PaloBoost](), are readily available.
+For the full list of the Bonsai templates, please see [the Model Templates section](#model-templates).
 
 ## Contents
 
@@ -33,8 +31,8 @@ If you want to see the full list of the Bonsai templates, please read [the Model
 ## Background
 
 Decision tree is a recursive data partitioning algorithm. 
-Some well-known algorithms include [CART (Classification and Regression Trees)](https://en.wikipedia.org/wiki/Predictive_analytics#Classification_and_regression_trees_.28CART.29), [C4.5](https://en.wikipedia.org/wiki/C4.5_algorithm), [ID3](https://en.wikipedia.org/wiki/ID3_algorithm), and [CHAID](https://en.wikipedia.org/wiki/Chi-square_automatic_interaction_detection). 
-Although each decision tree may look differerent, without loss of generality, most trees have the following struture:
+Some well-known algorithms are [CART (Classification and Regression Trees)](https://en.wikipedia.org/wiki/Predictive_analytics#Classification_and_regression_trees_.28CART.29), [C4.5](https://en.wikipedia.org/wiki/C4.5_algorithm), [ID3](https://en.wikipedia.org/wiki/ID3_algorithm), and [CHAID](https://en.wikipedia.org/wiki/Chi-square_automatic_interaction_detection). 
+Although these decision trees may look very differerent, without loss of generality, the inner-workings of the most trees can be written as follows:
 
 ```python
 def decision_tree(X, y):
@@ -56,49 +54,61 @@ def decision_tree(X, y):
         "left": decision_tree(X_left, y_left)}   
 ```
 
-In the code above, `X` and `y` indicate features and target variable, respectively. 
+In the code above, `X` and `y` represent feature matrix and target vector, respectively. 
 The algorithm first looks at if it should stop the recursion - `is_leaf()`. 
 If not, then it searches a splitting variable and value pair to branch out further - `find_split()`.
 Based on the best pair of splitting variable and value, the dataset `(X, y)` is partitioned into two disjoint sets - one with smaller value than the splitting value, and the other with greather than or equal to the splitting value.
-We repeat the above process on each partitioned dataset recursively.
+Finally, the algorithm recursively repeats the above process on each partitioned dataset.
 
 The properties of decision tree are primarily determined by the two functions:
-- `find_split()`: This function decides which variable/value to split on. For example, C4.5 and ID3 use Information Gain using Shannon Entropy, and CART use the Gini impurity measure to choose a splitting variable. 
-- `is_leaf()`: This function controls when to stop growing the tree. For example, one can grow the tree till its depth is smaller than 4, or its node size is smaller than 30.
+- `find_split()` decides which variable/value to split on. For example, C4.5 and ID3 use Information Gain using Shannon Entropy, and CART uses the Gini impurity measure (for classification) and the minimum variance criterion (for regression) to choose a splitting variable. 
+- `is_leaf()` controls when to stop growing the tree. For example, a tree can stop growing if its depth is greater than 4 or its node size is smaller than 30.
 
-Many decision tree algorithms out there provide a set of parameters to control the behavior of these two functions. 
-Note that, in Bonsai, we ask users to write these **two functions from scratch**.
+Many decisino tree algorithms implement these functions internally, and expose only a set of parameters through their interfaces. 
+This approach is definitely better for users who want to try the off-the-shelf decision trees.
+However, if you want to design *new trees*, you may need to read the underlying source code, which can be quite complex by the way, and rebuild the projects.
+Is there a better way?
+That's why we developed Bonsai.
 
 ## Design Functions
 
+Rather than a set of parameters, Bonsai takes two functions as its input.
+In this section, we illustrate the details of these functions, such as arguments to pass on, output formats, and some example implementations.
+
 ### `find_split(avc)`
 
-The argument of the `find_split` is a numpy array named as `avc`. 
-The `avc` variable has 10 columns and variable rows.
+The `find_split` function needs only one argument `avc`.
+The `avc` variable is a numpy array that has 10 columns and variable rows.
 The name `avc` stands for Attribute-Value Classlabel Group (or AVC-group), which was first introduced in [the Rainforest framework](https://link.springer.com/article/10.1023/A:1009839829793). 
-The Bonsai core algorithm "sketches" the statistics of data on a numpy array, named as "canvas", and returns the "AVC-group" (`avc`) to the `find_split` function.
-Essentially, the role of the `find_split` function is to examine the distributions of the data, and to find the best attribute and value pair to split the data. 
+
+
+Here is how Bonsai works in a nutshell.
+Whenever we call `find_split`, Bonsai scans the data, and updating a couple of online statistics such as mean, second moment, count, etc.
+We call this process as Bonsai "sketches" the stats on `canvas`, where canvas represents just an empty numpy array.
+When the sketch is done, the empty numpy array, `canvas`, is filled with all relevant statistics for defining splitting criteria. 
+Just to be clear, we call the `canvas` after sketch as `avc`. 
 The column order of `avc` is as follows:
 
 - `avc[:,0]`: AVC indices
 - `avc[:,1]`: variable indices i.e. column indices starting from 0
 - `avc[:,2]`: split values i.e. samples below this value goes to the left node, and vice versa
-- `avc[:,3]`: number of samples at left node
+- `avc[:,3]`: number of samples at (hypothetical) left node
 - `avc[:,4]`: sum `y` at left node i.e. `\sum_{left} y`
 - `avc[:,5]`: sum of `y^2` at left node i.e. `\sum_{left} y^2`
-- `avc[:,6]`: number of samples at right node
+- `avc[:,6]`: number of samples at (hypothetical) right node
 - `avc[:,7]`: sum of `y` at right node i.e. `\sum_{right} y`
 - `avc[:,8]`: sum of `y^2` at right node i.e. `\sum_{right} y^2`
 - `avc[:,9]`: missing value inclusion (0: left node, 1: right node)
 
-Users need to play with this array to define custom splitting criteria. 
+Essentially, the `find_split` function is given with the joint distribution information in the form of AVC-group.
+With this information, the function needs to define what properties of the distributions should paly roles in finding the best splitting variable and value. 
  
-The return of the function is a dictionary with the following required key value pairs:
+The return of the function is a Python dictionary with the following required key value pairs:
 
 - `selected`: the selected row of the `avc` array
 - `<additional var>`: any additional variables you want to pass on
 
-For example, if you want to design a splitting criteria that minimizes the weighted sum of variances after the split (e.g. regression tree), you can write `find_split` as follows:
+For example, if you want to design a splitting criteria that minimizes the weighted sum of variances after the split (e.g. regression tree in CART), you can write `find_split` as follows:
 
 ```python
 def find_split(avc):
@@ -111,12 +121,11 @@ def find_split(avc):
     
 ### `is_leaf(branch, branch_parent)`
 
-The `is_leaf` function has two arguments: one for the current branch, and the other for the parent branch. Both branches are in the form of Python dictionary. 
-By default, these branch variables have the following key value pairs:
+The `is_leaf` function takes two arguments: one for the current branch, and the other for the parent branch. 
+Both variables are Python dictionaries. 
+By default, these branch variables have the following key value pairs, but can have additional key value pairs if users defined `<additional var>` in `find_split`:
 - `depth`: the depth of the branch in the tree
 - `n_samples`: the number of samples in the branch
-
-Users can add additional key value pairs if necessary.
 
 The return of this function is boolean. If the branch is a leaf, then returns `True`. Otherwise, returns `False`.
 
@@ -132,7 +141,7 @@ def is_leaf(branch, branch_parent):
 
 ### Putting Things Together
 
-With the `find_split` and `is_leaf` implemented, now you can put these together to make your custom decision tree as follows:
+With the `find_split` and `is_leaf` written, now you can put these together to make your own decision tree as follows:
 
 ```python
 from ..core.bonsai import Bonsai
@@ -162,11 +171,13 @@ Now, you can use `MyTree` just by importing the class in your project.
 
 ## Code Examples
 
+We provide several examples of using Bonsai.
+
 ### Using a Model Template
 
-You can use the model templates already built in Bonsai. 
-The model templates implemente various decision trees, so you can just import and use them right away.
-A regression tree example is as follows:
+Probably the easiest and fastest way to use Bonsai is using the model templeates in Bonsai.
+The model templates are decision trees that are already built in Bonsai, which include regression tree, C4.5, Alpha-Tree, etc.
+For example, if you want to use a regression tree example:
 
 ```python
 # Pre-built regression tree using Bonsai
@@ -192,8 +203,8 @@ y_hat = model.predict(X_test)
 rmse = np.sqrt(np.mean((y_test - y_hat)**2))
 ```
 
-Available model templates are listed in [the next section](#model-templates).
-Also, take a look at the test scripts under [the tests folder](tests/). 
+Available model templates are listed in [the Model Templates section](#model-templates).
+Also, take a look at the test scripts under [the tests folder](tests/) to see how to use these templates. 
 
 ### Interpreting a Trained Bonsai Tree
 
@@ -245,14 +256,13 @@ This script will output the trained tree in the form of an array of leaf nodes. 
 ]
 ```
 
-This is a depth-1 tree, so you have two leaves in the array.
-In each leaf, you see `eqs` that stores the logical rules for the leaf.
-Also, you see `y`, which indicates the node value or predicted value for the leaf.
+As this is a depth-1 tree, we only see two leaves in the array.
+In each leaf, you see `eqs` that stores the logical rules for the leaf, and `y` that indicates the node value or predicted value for the leaf.
 All Bonsai-derived trees would have this form of output.
 
 ## Model Templates
 
-Here are some Bonsai templates:
+Here is the list of Bonsai templates:
 
 - [Regression Tree](bonsai/base/regtree.py) implements the regression tree in CART [(src)](bonsai/base/regtree.py) [(usage)](tests/regtree.py)
 - [Alpha Tree](bonsai/base/alphatree.py) implements the [Alpha tree (paper)](https://arxiv.org/abs/1606.05325) [(src)](bonsai/base/alphatree.py) [(usage)](tests/alphatree.py)
