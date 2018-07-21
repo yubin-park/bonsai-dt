@@ -67,8 +67,8 @@ As can be seen, the behavior of a decision tree is primarily governed by the two
 
 Many decision tree algorithms implement these functions internally, and expose only a set of parameters through their interfaces. 
 This approach is definitely better for users who want to try the off-the-shelf decision trees.
-However, if we want to design *a new trees* that does not exist anywhere, 
-we may need to edit the underlying source code, which can be quite complex and time-consuming.
+However, if we want to design *a new tree* that does not exist anywhere, 
+we need to edit the underlying source code, which may be quite complex and time-consuming.
 Is there a better way?
 That's why we developed Bonsai.
 
