@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 from bonsai.base.regtree import RegTree
-from bonsai.ensemble.randomforest import RandomForest
+from bonsai.ensemble.randomforests import RandomForests
 from sklearn.datasets import make_friedman1
 from sklearn.datasets import make_friedman2
 from sklearn.datasets import make_friedman3
@@ -22,7 +22,7 @@ def test():
 
     reg_params = {"subsample": 0.9, 
                     "max_depth": 4}
-    models = {"bonsai-rf": RandomForest(base_estimator=RegTree,
+    models = {"bonsai-rf": RandomForests(base_estimator=RegTree,
                             base_params=reg_params,
                             n_estimators=20),
             "sklearn": RandomForestRegressor(

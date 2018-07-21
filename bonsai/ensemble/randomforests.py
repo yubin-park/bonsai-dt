@@ -9,7 +9,7 @@ This class implements RandomForests:
 from ..base.regtree import RegTree
 import numpy as np
 
-class RandomForest():
+class RandomForests():
 
     def __init__(self,
                 base_estimator,
