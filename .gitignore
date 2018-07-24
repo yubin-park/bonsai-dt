@@ -48,6 +48,4 @@ Thumbs.db
 # Misc #
 ######################
 data
-dumps
-tests/hft.py
 .ipynb_checkpoints

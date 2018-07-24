@@ -8,7 +8,7 @@ The intent of this project is to provide a quick testing bed for various decisio
 Although the speed of Bonsai is comparable to other implementations, we note that the speed and scalability of the framework are not the primary focus.
 
 Many decision trees, such as C4.5 and CART, are already implemented and available in the Bonsai templates.
-Even ensemble models, such as Gradient Boosting, Random Forests and [PaloBoost](), are readily available.
+Even ensemble models, such as Gradient Boosting, Random Forests and [PaloBoost](https://arxiv.org/abs/1807.08383), are readily available.
 For the full list of the Bonsai templates, please see [the Model Templates section](#model-templates).
 
 ## Contents
@@ -290,14 +290,14 @@ All Bonsai-derived trees would have this form of output.
 Here is the list of Bonsai templates:
 
 - *class* **RegTree()** implements the regression tree in CART. [(src)](https://github.com/yubin-park/bonsai-dt/blob/master/bonsai/base/regtree.py) [(usage)](https://github.com/yubin-park/bonsai-dt/blob/master/tests/regtree.py)
-- *class* **AlphaTree**: implements the alpha tree in ["ACDC: alpha-Carving Decision Chain for Risk Stratification"](https://arxiv.org/abs/1606.05325). [(src)](https://github.com/yubin-park/bonsai-dt/blob/master/bonsai/base/alphatree.py) [(usage)](https://github.com/yubin-park/bonsai-dt/blob/master/tests/alphatree.py)
+- *class* **AlphaTree()** implements the alpha tree in ["ACDC: alpha-Carving Decision Chain for Risk Stratification"](https://arxiv.org/abs/1606.05325). [(src)](https://github.com/yubin-park/bonsai-dt/blob/master/bonsai/base/alphatree.py) [(usage)](https://github.com/yubin-park/bonsai-dt/blob/master/tests/alphatree.py)
 - *class* **C45Tree()** implements a C4.5-like tree using the alpha tree. The tree uses the information gain for its splitting criterion. [(src)](https://github.com/yubin-park/bonsai-dt/blob/master/bonsai/base/c45tree.py)
 - *class* **GiniTree()** implements the classification tree in CART using the alpha tree. [(src)](https://github.com/yubin-park/bonsai-dt/blob/master/bonsai/base/ginitree.py)
 - *class* **XGBTree()** implements the base learner of [XGBoost](https://github.com/dmlc/xgboost). [(src)](https://github.com/yubin-park/bonsai-dt/blob/master/bonsai/base/xgbtree.py)
 - *class* **FriedmanTree()** implements the base learner in ["Greedy Function Approximation: A Gradient Boosting Machine"](https://statweb.stanford.edu/~jhf/ftp/trebst.pdf). [(src)](https://github.com/yubin-park/bonsai-dt/blob/master/bonsai/base/friedmantree.py)
 - *class* **GBM()** implements the Stochastic Gradient TreeBoost that appeared in ["Stochastic Gradient Boosting"](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf). [(src)](https://github.com/yubin-park/bonsai-dt/blob/master/bonsai/ensemble/gbm.py) [(usage)](https://github.com/yubin-park/bonsai-dt/blob/master/tests/gbm.py)
 - *class* **RandomForests()** implements the Random Forests model in ["Random Forests"](https://www.stat.berkeley.edu/~breiman/randomforest2001.pdf). [(src)](https://github.com/yubin-park/bonsai-dt/blob/master/bonsai/ensemble/randomforests.py) [(usage)](https://github.com/yubin-park/bonsai-dt/blob/master/tests/randomforests.py)
-- *class* **PaloBoost()** implements PaloBoost in ["PaloBoost: An Overfitting-robust TreeBoost with Out-of-Bag Sample Regularization Techniques"](). [(src)](https://github.com/yubin-park/bonsai-dt/blob/master/bonsai/ensemble/paloboost.py) [(usage)](https://github.com/yubin-park/bonsai-dt/blob/master/tests/paloboost.py) [(research)](https://github.com/yubin-park/bonsai-dt/blob/master/research/paloboost.ipynb)
+- *class* **PaloBoost(https://arxiv.org/abs/1807.08383)** implements PaloBoost in ["PaloBoost: An Overfitting-robust TreeBoost with Out-of-Bag Sample Regularization Techniques"](). [(src)](https://github.com/yubin-park/bonsai-dt/blob/master/bonsai/ensemble/paloboost.py) [(usage)](https://github.com/yubin-park/bonsai-dt/blob/master/tests/paloboost.py) [(research)](https://github.com/yubin-park/bonsai-dt/blob/master/research/paloboost.ipynb)
 
 ## Glossaries 
 
