@@ -6,7 +6,7 @@ This class implements the XGBoost base tree that appeared in:
 # Authors: Yubin Park <yubin.park@gmail.com>
 # License: Apache License 2.0
 
-from ..core.bonsai import Bonsai
+from bonsai.core.bonsaic import Bonsai
 import numpy as np
 
 class XGBTree(Bonsai):

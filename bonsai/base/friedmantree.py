@@ -8,7 +8,7 @@ FYI, this is the default splitting criterion for Scikit-Learn GBM.
 # Authors: Yubin Park <yubin.park@gmail.com>
 # License: Apache License 2.0
 
-from ..core.bonsai import Bonsai
+from bonsai.core.bonsaic import Bonsai
 import numpy as np
 
 class FriedmanTree(Bonsai):

@@ -8,7 +8,7 @@ scikit-learn and R, call SGTB as GBM.
 # Authors: Yubin Park <yubin.park@gmail.com>
 # License: Apache License 2.0
 
-from ..base.friedmantree import FriedmanTree
+from bonsai.base.friedmantree import FriedmanTree
 import numpy as np
 from scipy.special import expit
 import time

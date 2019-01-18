@@ -6,7 +6,7 @@ This class implements PaloBoost, an imprvoed Stochastic Gradient TreeBoost
 # Authors: Yubin Park <yubin.park@gmail.com>
 # License: Apache License 2.0
 
-from ..base.xgbtree import XGBTree
+from bonsai.base.xgbtree import XGBTree
 from collections import Counter
 import numpy as np
 from scipy.special import expit

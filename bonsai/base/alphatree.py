@@ -7,7 +7,7 @@ This class implements a modified version of Alpha Tree that appeared in
 # Authors: Yubin Park <yubin.park@gmail.com>
 # License: Apache License 2.0
 
-from ..core.bonsai import Bonsai
+from bonsai.core.bonsaic import Bonsai
 import numpy as np
 
 PRECISION = 1e-12

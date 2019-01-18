@@ -8,11 +8,11 @@ User need to provide two additional functions to complete the Bonsai class:
 # Authors: Yubin Park <yubin.park@gmail.com>
 # License: Apache License 2.0
 
-from _bonsai import (
+from bonsai.core._bonsaic import (
     reorder, 
     sketch,
     apply_tree)
-from _utils import (
+from bonsai.core._utils import (
     reconstruct_tree,
     get_canvas_dim,
     setup_canvas_na,
@@ -240,7 +240,7 @@ class Bonsai:
             For more info, see the get_sibling_id
         """
         id2index = {leaf["_id"]:i for i, leaf in enumerate(self.leaves)}
-        leaf_ids = id2index.keys()
+        leaf_ids = [k for k in id2index.keys()]
         sibling_pairs = []
         while len(leaf_ids) > 0:
             leaf_id = leaf_ids.pop()

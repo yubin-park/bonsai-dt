@@ -5,7 +5,7 @@ This class implements C45 by inheriting the alpha tree (alpha=1).
 # Authors: Yubin Park <yubin.park@gmail.com>
 # License: Apache License 2.0
 
-from alphatree import AlphaTree
+from bonsai.base.alphatree import AlphaTree
 import numpy as np
 
 class C45Tree(AlphaTree):

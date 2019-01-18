@@ -6,7 +6,7 @@ This class implements RandomForests:
 # Authors: Yubin Park <yubin.park@gmail.com>
 # License: Apache License 2.0
 
-from ..base.regtree import RegTree
+from bonsai.base.regtree import RegTree
 import numpy as np
 
 class RandomForests():

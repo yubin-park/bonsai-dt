@@ -6,7 +6,7 @@ by inheriting the alpha tree (alpha=2).
 # Authors: Yubin Park <yubin.park@gmail.com>
 # License: Apache License 2.0
 
-from alphatree import AlphaTree
+from bonsai.base.alphatree import AlphaTree
 import numpy as np
 
 class GiniTree(AlphaTree):

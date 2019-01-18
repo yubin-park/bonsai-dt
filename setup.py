@@ -16,8 +16,8 @@ LICENSE = "Apache 2.0"
 SRC_DIR = "bonsai"
 PACKAGES = [SRC_DIR]
 
-ext_1 = Extension(SRC_DIR + ".core._bonsai",
-                  [SRC_DIR + "/core/_bonsai.pyx"],
+ext_1 = Extension(SRC_DIR + ".core._bonsaic",
+                  [SRC_DIR + "/core/_bonsaic.pyx"],
                   libraries=[],
                   include_dirs=[np.get_include()])
 EXTENSIONS = [ext_1]
