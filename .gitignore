@@ -47,5 +47,5 @@ Thumbs.db
 
 # Misc #
 ######################
-data
 .ipynb_checkpoints
+.Rapp.history

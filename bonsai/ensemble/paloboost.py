@@ -22,6 +22,7 @@ class PaloBoost():
                 max_depth=3,
                 n_estimators=100,
                 reg_lambda=0.1,
+                do_prune=True,
                 random_state=0):
         self.base_estimator = XGBTree
         self.base_params = {"subsample": subsample,
@@ -33,6 +34,7 @@ class PaloBoost():
         self.nu = learning_rate
         self.n_estimators = n_estimators
         self.reg_lambda = reg_lambda
+        self.do_prune = do_prune
 
         self.intercept = 0.0
         self.estimators = []
@@ -114,7 +116,7 @@ class PaloBoost():
             do_oob = estimator.is_stochastic()
 
             # NOTE: prune
-            if do_oob:
+            if do_oob and self.do_prune:
                 n_leaves_bf_prune = len(estimator.dump())
                 estimator.prune(X, y, y_hat, self.nu)
                 n_leaves_af_prune = len(estimator.dump())
