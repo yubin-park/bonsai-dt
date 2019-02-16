@@ -200,12 +200,20 @@ class PaloBoost():
             fi += est.get_feature_importances()
             yield fi
 
-    def dump(self, columns=[]): 
-        estimators = [estimator.dump(columns)
+    def dump(self): 
+        estimators = [estimator.dump()
                         for estimator in self.estimators]
         return {"intercept": self.intercept, 
                 "estimators": estimators}
-    
+   
+    def load(self, model):
+        self.intercept = model["intercept"] 
+        for estjson in model["estimators"]:
+            est = self.base_estimator()
+            est.load(estjson)
+            self.estimators.append(est)
+        return None
+ 
     def get_prune_stats(self):
         return self.prune_stats
 

@@ -19,6 +19,7 @@ from bonsai.core._utils import (
     setup_canvas,
     get_child_branch)
 import numpy as np
+import json
 from scipy.special import expit
 import time
 
@@ -205,12 +206,16 @@ class Bonsai:
 
     def dump(self, columns=[]):
         """Dumps the trained tree in the form of array of leaves"""
+        def default(o):
+            if isinstance(o, np.int64): return int(o)
+            raise TypeError
+
         n_col = len(columns)
         for leaf in self.leaves:
             for eq in leaf["eqs"]:
                 if eq["svar"] < n_col:
                     eq["name"] = columns[int(eq["svar"])]
-        return self.leaves
+        return json.loads(json.dumps(self.leaves, default=default))
 
     def load(self, leaves, columns=None):
         """Loads a new tree in the form of array of leaves"""
@@ -261,6 +266,8 @@ class Bonsai:
                 are used in RandomForests or GBM.
             For more info, please see the PaloBoost paper.
         """
+        if self.n_features_ == 0:
+            return None
         self.feature_importances_ = np.zeros(self.n_features_)
         cov = 0
         J = len(self.leaves)

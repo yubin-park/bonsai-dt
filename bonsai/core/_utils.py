@@ -27,7 +27,7 @@ def get_child_branch(ss, parent_branch, i_split, side):
 
     if side == "@l":
         child_branch["i_start"] = parent_branch["i_start"]
-        child_branch["i_end"] = i_split 
+        child_branch["i_end"] = i_split
         child_branch["_id"] = "{}::{}L".format(parent_id, sidx)
         child_branch["eqs"].append({"svar": svar, 
                                     "sval": sval, 
