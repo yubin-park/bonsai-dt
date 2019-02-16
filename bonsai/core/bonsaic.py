@@ -162,7 +162,7 @@ class Bonsai:
         # integer index for leaves (from 0 to len(leaves))
         for i, leaf in enumerate(self.leaves): 
             leaf["index"] = i 
-        self.get_feature_importances()
+        self.update_feature_importances()
         self.tree_ind, self.tree_val = reconstruct_tree(self.leaves)
 
     def predict(self, X, output_type="response"):
@@ -220,7 +220,6 @@ class Bonsai:
     def load(self, leaves, columns=None):
         """Loads a new tree in the form of array of leaves"""
         self.leaves = leaves
-        self.get_feature_importances()
         self.tree_ind, self.tree_val = reconstruct_tree(self.leaves)
         return None
 
@@ -258,8 +257,11 @@ class Bonsai:
             else:
                 sibling_pairs.append((id2index[leaf_id], None))
         return sibling_pairs
-    
+   
     def get_feature_importances(self):
+        return self.feature_importances_
+ 
+    def update_feature_importances(self):
         """Returns a modified feature importance.
             This formula takes into account of node coverage and leaf value.
             NOTE: This is different from regular feature importances that

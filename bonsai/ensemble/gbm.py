@@ -107,9 +107,10 @@ class GBM():
                 y_hat[leaf_mask] += leaf["y"]
 
             estimator.load(leaves)
+            estimator.update_feature_importances()
             self.estimators.append(estimator)
 
-        self.get_feature_importances()
+        self.update_feature_importances()
 
         # Done fit()
 
@@ -151,7 +152,7 @@ class GBM():
             else:
                 yield y_hat 
 
-    def get_feature_importances(self):
+    def update_feature_importances(self):
         fi = np.zeros(self.n_features_)        
         for est in self.estimators:
             fi += est.get_feature_importances()

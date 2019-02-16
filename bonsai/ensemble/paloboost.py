@@ -145,9 +145,10 @@ class PaloBoost():
             self.lr_stats.append([i, avg_nu])
 
             estimator.load(leaves)
+            estimator.update_feature_importances()
             self.estimators.append(estimator)
 
-        self.get_feature_importances()
+        self.update_feature_importances()
 
         # Done fit()
 
@@ -187,7 +188,7 @@ class PaloBoost():
             else:
                 yield y_hat 
 
-    def get_feature_importances(self):
+    def update_feature_importances(self):
         fi = np.zeros(self.n_features_)        
         for est in self.estimators:
             fi += est.get_feature_importances()
