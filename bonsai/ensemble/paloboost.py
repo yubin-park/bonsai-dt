@@ -23,13 +23,17 @@ class PaloBoost():
                 n_estimators=100,
                 reg_lambda=0.1,
                 do_prune=True,
-                random_state=0):
+                random_state=0,
+                min_samples_split=2,
+                min_samples_leaf=1):
         self.base_estimator = XGBTree
         self.base_params = {"subsample": subsample,
                             "max_depth": max_depth,
                             "distribution": distribution,
                             "reg_lambda": reg_lambda,
-                            "random_state": random_state}
+                            "random_state": random_state,
+                            "min_samples_split": min_samples_split,
+                            "min_samples_leaf": min_samples_leaf}
         self.distribution = distribution
         self.nu = learning_rate
         self.n_estimators = n_estimators
