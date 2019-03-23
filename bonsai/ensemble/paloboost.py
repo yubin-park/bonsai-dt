@@ -208,10 +208,16 @@ class PaloBoost():
     def dump(self): 
         estimators = [estimator.dump()
                         for estimator in self.estimators]
-        return {"intercept": self.intercept, 
+        return {"distribution": self.distribution,
+                "learning_rate": self.nu,
+                "n_estimators": self.n_estimators,
+                "intercept": self.intercept, 
                 "estimators": estimators}
    
     def load(self, model):
+        self.distribution = model["distribution"]
+        self.nu = model["learning_rate"]
+        self.n_estimators = model["n_estimators"]
         self.intercept = model["intercept"] 
         for estjson in model["estimators"]:
             est = self.base_estimator()
