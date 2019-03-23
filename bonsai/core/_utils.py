@@ -90,8 +90,8 @@ def setup_canvas(canvas_dim):
 def get_canvas_dim(X, n_hist_max):
 
     m = X.shape[1]
-    x_min = np.nanmin(X, axis=0)
-    x_max = np.nanmax(X, axis=0)
+    x_min = np.nanmin(np.ma.masked_invalid(X), axis=0)
+    x_max = np.nanmax(np.ma.masked_invalid(X), axis=0)
     canvas_dim = np.zeros((m, 5), dtype=np.float, order="C")
 
     # Format of cavas row: [j, x_min, x_delta, n_bin, offset]
