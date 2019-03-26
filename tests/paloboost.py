@@ -32,7 +32,7 @@ def test_regression():
                             n_estimators=100,
                             learning_rate=1.0,
                             max_depth=4,
-                            subsample=0.5),
+                            subsample0=0.5),
             "gbm": GBM(distribution="gaussian",
                         n_estimators=100, 
                         learning_rate=1.0,
@@ -90,7 +90,7 @@ def test_classification():
                             n_estimators=10, 
                             learning_rate=1.0,
                             max_depth=4,
-                            subsample=0.5),
+                            subsample0=0.5),
             "gbm": GBM(distribution="bernoulli",
                             n_estimators=10, 
                             learning_rate=1.0,
@@ -134,6 +134,6 @@ def test_classification():
 
 if __name__=="__main__":
 
-    #test_regression()
+    test_regression()
     test_classification()
 

@@ -15,6 +15,7 @@ class XGBTree(Bonsai):
                 min_samples_split=2,
                 min_samples_leaf=1,
                 subsample=1.0,
+                subsample_splts=1.0,
                 reg_lambda=0.1,            # regularization
                 random_state=1234,
                 distribution="gaussian",
@@ -25,6 +26,7 @@ class XGBTree(Bonsai):
         self.min_samples_leaf = min_samples_leaf
         self.reg_lambda = reg_lambda
         self.distribution = distribution
+        self.subsample_splts = np.clip(subsample_splts, 0.0, 1.0)
 
         def find_split(avc):
 
@@ -35,6 +37,11 @@ class XGBTree(Bonsai):
                             avc[:,3] > self.min_samples_leaf,
                             avc[:,6] > self.min_samples_leaf)
             avc = avc[valid_splits,:]
+
+            if self.subsample_splts < 1.0:
+                n_avc = avc.shape[0]
+                mask = np.random.rand(n_avc) < self.subsample_splts
+                avc = avc[mask,:]
 
             if avc.shape[0] == 0:
                 return None

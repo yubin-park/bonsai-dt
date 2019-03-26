@@ -29,7 +29,7 @@ class Bonsai:
                 find_split,
                 is_leaf, 
                 n_hist_max=256, 
-                subsample=1.0, 
+                subsample=1.0,        # subsample rate for rows (samples)
                 random_state=None,
                 z_type="M2"):
 

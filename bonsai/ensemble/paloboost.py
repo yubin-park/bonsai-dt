@@ -19,6 +19,7 @@ class PaloBoost():
                 distribution="gaussian",
                 learning_rate=0.1,
                 subsample=0.7,
+                subsample_splts=1.0,
                 max_depth=3,
                 n_estimators=100,
                 reg_lambda=0.1,
@@ -32,6 +33,7 @@ class PaloBoost():
                             "distribution": distribution,
                             "reg_lambda": reg_lambda,
                             "random_state": random_state,
+                            "subsample_splts": subsample_splts,
                             "min_samples_split": min_samples_split,
                             "min_samples_leaf": min_samples_leaf}
         self.distribution = distribution

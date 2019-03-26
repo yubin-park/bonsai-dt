@@ -21,7 +21,8 @@ def test():
                                             test_size=0.2)
 
     models = {"bonsai-reg": RegTree(max_depth=3),
-            "bonsai-xgb": XGBTree(max_depth=3),
+            "bonsai-xgb0": XGBTree(max_depth=3),
+            "bonsai-xgb1": XGBTree(max_depth=3, subsample_splts=0.5),
             "sklearn": DecisionTreeRegressor(max_depth=3)}
 
     print("\n")
