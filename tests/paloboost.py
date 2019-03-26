@@ -2,6 +2,7 @@ from __future__ import print_function
 
 from bonsai.ensemble.gbm import GBM
 from bonsai.ensemble.paloboost import PaloBoost
+from bonsai.ensemble.paloforest import PaloForest
 
 from sklearn.datasets import make_friedman1
 from sklearn.datasets import make_friedman2
@@ -17,12 +18,17 @@ import time
 
 def test_regression():
 
-    X, y = make_friedman1(n_samples=100000, noise=5) 
+    X, y = make_friedman1(n_samples=10000, noise=5) 
     n, m = X.shape
     X_train, X_test, y_train, y_test = train_test_split(X, y, 
                                             test_size=0.5)
 
     models = {"palobst": PaloBoost(distribution="gaussian",
+                            n_estimators=100,
+                            learning_rate=1.0,
+                            max_depth=4,
+                            subsample=0.5),
+            "palofrst": PaloForest(distribution="gaussian",
                             n_estimators=100,
                             learning_rate=1.0,
                             max_depth=4,
@@ -69,24 +75,29 @@ def test_regression():
 
 def test_classification():
 
-    X, y = make_hastie_10_2(n_samples=1000) 
+    X, y = make_hastie_10_2(n_samples=10000) 
     y[y<0] = 0
     n, m = X.shape
     X_train, X_test, y_train, y_test = train_test_split(X, y, 
                                             test_size=0.5)
 
     models = {"palobst": PaloBoost(distribution="bernoulli",
-                            n_estimators=100, 
+                            n_estimators=10, 
+                            learning_rate=1.0,
+                            max_depth=4,
+                            subsample=0.5),
+            "palofrst": PaloForest(distribution="bernoulli",
+                            n_estimators=10, 
                             learning_rate=1.0,
                             max_depth=4,
                             subsample=0.5),
             "gbm": GBM(distribution="bernoulli",
-                            n_estimators=100, 
+                            n_estimators=10, 
                             learning_rate=1.0,
                             max_depth=4,
                             subsample=0.5),
             "sklearn": GradientBoostingClassifier(
-                        n_estimators=100, 
+                        n_estimators=10, 
                         learning_rate=1.0,
                         max_depth=4, 
                         subsample=0.5)}
@@ -123,6 +134,6 @@ def test_classification():
 
 if __name__=="__main__":
 
-    test_regression()
-    #test_classification()
+    #test_regression()
+    test_classification()
 
