@@ -28,7 +28,7 @@ class Bonsai:
     def __init__(self, 
                 find_split,
                 is_leaf, 
-                n_hist_max=256, 
+                n_hist_max=512, 
                 subsample=1.0,        # subsample rate for rows (samples)
                 random_state=None,
                 z_type="M2"):
