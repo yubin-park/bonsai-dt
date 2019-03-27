@@ -131,9 +131,58 @@ def test_classification():
     print("-----------------------------------------------------")
     print("\n")
 
+def test_dumpload():
+    X, y = make_friedman1(n_samples=10000, noise=5) 
+    n, m = X.shape
+    X_train, X_test, y_train, y_test = train_test_split(X, y, 
+                                            test_size=0.5)
+
+    model = PaloForest(distribution="gaussian",
+                            n_estimators=100,
+                            learning_rate=1.0,
+                            max_depth=4,
+                            subsample0=0.5)
+
+    print("\n")
+    print("# Test Dump/Load")
+    print("-----------------------------------------------------")
+    print(" model_name     train_time     predict_time   rmse   ")
+    print("-----------------------------------------------------")
+    print(" {0:12}   {1:12}   {2:12}   {3:.5f}".format(
+            "baseline", "-", "-", np.std(y_test)))
+
+    # Fit
+    start = time.time()
+    model.fit(X_train, y_train)
+
+    out = model.dump()
+    model.load(out)
+
+    time_fit = time.time() - start
+
+    # Predict
+    start = time.time()
+    y_hat = model.predict(X_test)
+    time_pred = time.time() - start
+
+    y_fitted = model.predict(X_train)
+    rmse_fitted = np.sqrt(np.mean((y_train - y_fitted)**2))
+
+    # Error
+    rmse = np.sqrt(np.mean((y_test - y_hat)**2))
+
+    print(" {0:12}   {1:.5f} sec    {2:.5f} sec    {3:.5f}".format(
+        "palofrst0", time_fit, time_pred, rmse_fitted))
+    print(" {0:12}   {1:.5f} sec    {2:.5f} sec    {3:.5f}".format(
+        "palofrst", time_fit, time_pred, rmse))
+
+    print("-----------------------------------------------------")
+    print("\n")
+
 
 if __name__=="__main__":
 
+    test_dumpload()
     test_regression()
     test_classification()
 

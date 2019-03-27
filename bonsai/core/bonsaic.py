@@ -204,7 +204,7 @@ class Bonsai:
         """
         return self.tree_ind, self.tree_val
 
-    def dump(self, columns=[]):
+    def dump(self, columns=[], compact=False):
         """Dumps the trained tree in the form of array of leaves"""
         def default(o):
             if isinstance(o, np.int64): return int(o)
@@ -215,7 +215,19 @@ class Bonsai:
             for eq in leaf["eqs"]:
                 if eq["svar"] < n_col:
                     eq["name"] = columns[int(eq["svar"])]
-        return json.loads(json.dumps(self.leaves, default=default))
+        out = json.loads(json.dumps(self.leaves, default=default))
+        if compact:
+            suplst = ["i_start", "i_end", "depth",
+                        "_id", "n_samples", "y_lst", 
+                        "is_leaf", "prune_status"]
+            out_cmpct = []
+            for leaf in out:
+                for key in suplst:
+                    leaf.pop(key, None)
+                out_cmpct.append(leaf) 
+            return out_cmpct
+        else:
+            return out
 
     def load(self, leaves, columns=None):
         """Loads a new tree in the form of array of leaves"""

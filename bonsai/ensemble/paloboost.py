@@ -208,7 +208,7 @@ class PaloBoost():
             yield fi
 
     def dump(self): 
-        estimators = [estimator.dump()
+        estimators = [estimator.dump(compact=True)
                         for estimator in self.estimators]
         return {"distribution": self.distribution,
                 "learning_rate": self.nu,

@@ -31,7 +31,7 @@ def get_child_branch(ss, parent_branch, i_split, side):
         child_branch["_id"] = "{}::{}L".format(parent_id, sidx)
         child_branch["eqs"].append({"svar": svar, 
                                     "sval": sval, 
-                                    "sidx": sidx,
+                                    #"sidx": sidx,
                                     "op": "<", 
                                     "missing": int(missing<0.5)})
     else:
@@ -40,7 +40,7 @@ def get_child_branch(ss, parent_branch, i_split, side):
         child_branch["_id"] = "{}::{}R".format(parent_id, sidx)
         child_branch["eqs"].append({"svar": svar, 
                                     "sval": sval, 
-                                    "sidx": sidx,
+                                    #"sidx": sidx,
                                     "op": ">=", 
                                     "missing": int(missing>0.5)})
         offset = 3
@@ -131,7 +131,7 @@ def reconstruct_tree(leaves):
         for depth, eq in enumerate(eqs):
             child_index = int(">="==eq["op"])
             svar = int(eq["svar"])
-            sidx = eq["sidx"]
+            #sidx = eq["sidx"]
             if child_index == 0:
                 missing = int(eq["missing"]==0)
             else:
