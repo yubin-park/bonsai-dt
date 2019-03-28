@@ -1,6 +1,5 @@
 """
-This class implements PaloBoost, an imprvoed Stochastic Gradient TreeBoost
- that is robust to overfitting and can provide robust performance.
+This class implements PaloForest, an ensemble of PaloBoost
 """
 
 # Authors: Yubin Park <yubin.park@gmail.com>
@@ -32,7 +31,7 @@ class PaloForest():
         self.subsample2 = subsample2 # subsample rate for the columns
         self.random_state = random_state
         self.estimators = []
-        
+        self.feature_importances_ = None
 
     def fit(self, X, y):
         np.random.seed(self.random_state)
@@ -52,6 +51,11 @@ class PaloForest():
                                 random_state=i*self.n_estimators)
             est.fit(X_i, y_i)
             self.estimators.append(est) 
+            if self.feature_importances_ is None:
+                self.feature_importances_ = est.feature_importances_
+            else:
+                self.feature_importances_ += est.feature_importances_
+        self.feature_importances_ /= self.n_paloboost
 
     def predict(self, X):
         y_hat = None
