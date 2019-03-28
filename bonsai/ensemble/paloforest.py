@@ -20,7 +20,8 @@ class PaloForest():
                 subsample1=0.7,
                 subsample2=0.7, 
                 max_depth=3,
-                n_estimators=100):
+                n_estimators=100, 
+                random_state=0):
         self.n_paloboost = n_paloboost
         self.distribution = distribution
         self.learning_rate = learning_rate
@@ -29,9 +30,12 @@ class PaloForest():
         self.subsample0 = subsample0 # subsample rate at the forest level
         self.subsample1 = subsample1 # subsample rate at the base level
         self.subsample2 = subsample2 # subsample rate for the columns
+        self.random_state = random_state
         self.estimators = []
+        
 
     def fit(self, X, y):
+        np.random.seed(self.random_state)
         n, m = X.shape
         idx = np.arange(n)
         self.estimators = []
@@ -44,7 +48,8 @@ class PaloForest():
                                 max_depth=self.max_depth,
                                 n_estimators=self.n_estimators,
                                 subsample=self.subsample1,
-                                subsample_splts=self.subsample2)
+                                subsample_splts=self.subsample2,
+                                random_state=i*self.n_estimators)
             est.fit(X_i, y_i)
             self.estimators.append(est) 
 
