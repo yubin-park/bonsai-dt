@@ -12,15 +12,16 @@ import numpy as np
 class PaloForest():
 
     def __init__(self,
-                n_paloboost=10,
-                distribution="gaussian",
-                learning_rate=0.1,
-                subsample0= 0.7,
-                subsample1=0.7,
-                subsample2=0.7, 
-                max_depth=3,
-                n_estimators=100, 
-                random_state=0):
+                n_paloboost = 10,
+                distribution = "gaussian",
+                learning_rate = 0.1,
+                subsample0 = 0.7,
+                subsample1 = 0.7,
+                subsample2 = 0.7, 
+                max_depth = 3,
+                n_estimators = 100, 
+                block_size = None,
+                random_state = 0):
         self.n_paloboost = n_paloboost
         self.distribution = distribution
         self.learning_rate = learning_rate
@@ -29,6 +30,7 @@ class PaloForest():
         self.subsample0 = subsample0 # subsample rate at the forest level
         self.subsample1 = subsample1 # subsample rate at the base level
         self.subsample2 = subsample2 # subsample rate for the columns
+        self.block_size = block_size # block sampling size for subsample0
         self.random_state = random_state
         self.estimators = []
         self.feature_importances_ = None
@@ -38,9 +40,15 @@ class PaloForest():
         n, m = X.shape
         idx = np.arange(n)
         self.estimators = []
-        n_sub = int(n*0.7)
         for i in range(self.n_paloboost):
-            mask = (np.random.rand(n) < self.subsample0)
+            mask = np.full(n, True)
+            if self.block_size is not None:
+                n_block = int(n/self.block_size) + 1
+                mask_block = (np.random.rand(n_block) < self.subsample0)
+                mask = np.repeat(mask_block, self.block_size)[:n]
+            else:
+                mask = (np.random.rand(n) < self.subsample0)
+            
             X_i, y_i = X[mask,:], y[mask]
             est = PaloBoost(distribution=self.distribution,
                                learning_rate=self.learning_rate,
