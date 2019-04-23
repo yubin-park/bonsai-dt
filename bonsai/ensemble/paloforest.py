@@ -8,6 +8,7 @@ This class implements PaloForest, an ensemble of PaloBoost
 
 from bonsai.ensemble.paloboost import PaloBoost
 import numpy as np
+import logging
 from sklearn.isotonic import IsotonicRegression
 
 class PaloForest():
@@ -44,7 +45,15 @@ class PaloForest():
         n, m = X.shape
         idx = np.arange(n)
         self.estimators = []
-        for i in range(self.n_paloboost):
+        
+        if (self.distribution=="bernoulli" and
+            (np.sum(y) < 3 or np.sum(y) > n-3)):
+            logging.error(("the target (y) needs to have "
+                            "at least one examples on each class"))
+            return None
+
+        i = 0
+        while i < self.n_paloboost:
             mask = np.full(n, True)
             if self.block_size is not None:
                 n_block = int(n/self.block_size) + 1
@@ -54,6 +63,13 @@ class PaloForest():
                 mask = (np.random.rand(n) < self.subsample0)
             
             X_i, y_i = X[mask,:], y[mask]
+            X_j, y_j = X[~mask,:], y[~mask]
+
+            if (self.distribution == "bernoulli" and
+                (np.unique(y_i).shape[0]==1 or
+                    np.unique(y_j).shape[0]==1)):
+                continue
+
             est = PaloBoost(distribution=self.distribution,
                                learning_rate=self.learning_rate,
                                 max_depth=self.max_depth,
@@ -70,12 +86,12 @@ class PaloForest():
             
             if (self.distribution=="bernoulli" and
                 self.calibrate):
-                X_j, y_j = X[~mask,:], y[~mask]
                 z_j = est.predict_proba(X_j)[:,1]
                 clb = IsotonicRegression(y_min=0, y_max=1, 
                                         out_of_bounds="clip")
                 clb.fit(z_j, y_j)
                 self.calibrators.append(clb)
+            i += 1
 
         self.feature_importances_ /= self.n_paloboost
 
