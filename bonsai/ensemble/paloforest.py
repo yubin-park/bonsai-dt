@@ -4,10 +4,11 @@ This class implements PaloForest, an ensemble of PaloBoost
 
 # Authors: Yubin Park <yubin.park@gmail.com>
 # License: Apache License 2.0
+# NOTE: This module requires sklearn.isotonic
 
 from bonsai.ensemble.paloboost import PaloBoost
 import numpy as np
-
+from sklearn.isotonic import IsotonicRegression
 
 class PaloForest():
 
@@ -20,6 +21,7 @@ class PaloForest():
                 subsample2 = 0.7, 
                 max_depth = 3,
                 n_estimators = 100, 
+                calibrate = True,
                 block_size = None,
                 random_state = 0):
         self.n_paloboost = n_paloboost
@@ -31,8 +33,10 @@ class PaloForest():
         self.subsample1 = subsample1 # subsample rate at the base level
         self.subsample2 = subsample2 # subsample rate for the columns
         self.block_size = block_size # block sampling size for subsample0
+        self.calibrate = calibrate # to apply calibration or not
         self.random_state = random_state
         self.estimators = []
+        self.calibrators = []
         self.feature_importances_ = None
 
     def fit(self, X, y):
@@ -63,27 +67,46 @@ class PaloForest():
                 self.feature_importances_ = est.feature_importances_
             else:
                 self.feature_importances_ += est.feature_importances_
+            
+            if (self.distribution=="bernoulli" and
+                self.calibrate):
+                X_j, y_j = X[~mask,:], y[~mask]
+                z_j = est.predict_proba(X_j)[:,1]
+                clb = IsotonicRegression(y_min=0, y_max=1, 
+                                        out_of_bounds="clip")
+                clb.fit(z_j, y_j)
+                self.calibrators.append(clb)
+
         self.feature_importances_ /= self.n_paloboost
 
     def predict(self, X):
         y_hat = None
-        for est in self.estimators:
+        for i, est in enumerate(self.estimators):
+            z_hat = est.predict(X)
+            if (self.distribution=="bernoulli" and
+                self.calibrate):
+                z_hat[:,1] = self.calibrators[i].predict(z_hat[:,1])
+                z_hat[:,0] = 1.0 - z_hat[:,1]
             if y_hat is None:
-                y_hat = est.predict(X)
-            else: 
-                y_hat += est.predict(X)
+                y_hat = z_hat
+            else:
+                y_hat += z_hat
         y_hat /= len(self.estimators)
         return y_hat
 
     def predict_proba(self, X):
         return self.predict(X)
 
-    def dump(self): 
-        return [estimator.dump() for estimator in self.estimators]
+    def dump(self):
+        model = {"est": [est.dump() for est in self.estimators],
+                "clb": self.calibrators}
+        return model
    
     def load(self, model):
+        # NOTE: not yet
         self.estimators = []
-        for d in model:
+        self.calibrators = model["clb"]
+        for d in model["est"]:
             est = PaloBoost()
             est.load(d)
             self.estimators.append(est)

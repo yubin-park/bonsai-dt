@@ -1,20 +1,18 @@
-from __future__ import print_function
 from bonsai.base.regtree import RegTree
 from sklearn.datasets import make_friedman1
-import json
+import pickle
 import numpy as np
+import sys
+
 X, y = make_friedman1(n_samples=10000) 
 model = RegTree(max_depth=1)
 model.fit(X, y)
 
-out = model.dump(compact=True)
-print(json.dumps(out, indent=2))
+s = pickle.dumps(model.dump())
+print("Size of the model: {}".format(sys.getsizeof(s)))
 
-
-model.load(out)
-
+model.load(pickle.loads(s))
 mse = np.mean((model.predict(X) - y)**2)
-print(mse)
-print(np.var(y))
+print("Unpickled model's R2: {}".format(mse/np.var(y)))
 
 
