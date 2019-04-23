@@ -115,13 +115,17 @@ class PaloForest():
 
     def dump(self):
         model = {"est": [est.dump() for est in self.estimators],
-                "clb": self.calibrators}
+                "clb": self.calibrators,
+                "calibrate": self.calibrate,
+                "distribution": self.distribution}
         return model
    
     def load(self, model):
         # NOTE: not yet
-        self.estimators = []
         self.calibrators = model["clb"]
+        self.calibrate = model["calibrate"]
+        self.distribution = model["distribution"]
+        self.estimators = []
         for d in model["est"]:
             est = PaloBoost()
             est.load(d)
