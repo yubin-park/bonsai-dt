@@ -12,6 +12,7 @@ from bonsai.base.friedmantree import FriedmanTree
 import numpy as np
 from scipy.special import expit
 import time
+import logging
 
 PRECISION = 1e-5
 

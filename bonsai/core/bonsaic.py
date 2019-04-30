@@ -22,6 +22,7 @@ import numpy as np
 import json
 from scipy.special import expit
 import time
+import logging
 
 class Bonsai:
 
@@ -55,10 +56,9 @@ class Bonsai:
            the selected splitting variable and value pair.
         """
 
-        i_start = branch["i_start"]
-        i_end = branch["i_end"]
-
-    
+        i_start = int(branch["i_start"])
+        i_end = int(branch["i_end"])
+   
         # Get AVC-GROUP 
         avc = sketch(X, y, z, 
                     self.canvas, 
@@ -80,11 +80,12 @@ class Bonsai:
         svar = ss["selected"][1]
         sval = ss["selected"][2]
         missing = ss["selected"][9]
-        i_split = reorder(X, y, z, i_start, i_end, svar, sval, missing)
+
+        i_split = reorder(X, y, z, i_start, i_end, 
+                            svar, sval, missing)
 
         if i_split==i_start or i_split==i_end:
-            # NOTE: this condition may rarely happen due to 
-            #       Python's floating point treatments.
+            # NOTE: this condition may rarely happen
             #       We just ignore this case, and stop the tree growth
             branch["is_leaf"] = True
             return [branch]
@@ -219,7 +220,7 @@ class Bonsai:
         if compact:
             suplst = ["i_start", "i_end", "depth",
                         "_id", "n_samples", "y_lst", 
-                        "is_leaf", "prune_status"]
+                        "is_leaf", "prune_status"] # suppress
             out_cmpct = []
             for leaf in out:
                 for key in suplst:
@@ -285,14 +286,15 @@ class Bonsai:
         self.feature_importances_ = np.zeros(self.n_features_)
         cov = 0
         J = len(self.leaves)
-        for j, leaf in enumerate(self.leaves):
-            gamma_j = np.abs(leaf["y"])
-            cov_j = leaf["n_samples"]
-            cov += cov_j
-            eff_j = cov_j*gamma_j
-            for eq in leaf["eqs"]:
-                self.feature_importances_[eq["svar"]] += eff_j
-        self.feature_importances_ /= J
-        self.feature_importances_ /= cov
+        if J > 0:
+            for j, leaf in enumerate(self.leaves):
+                gamma_j = np.abs(leaf["y"])
+                cov_j = leaf["n_samples"]
+                cov += cov_j
+                eff_j = cov_j*gamma_j
+                for eq in leaf["eqs"]:
+                    self.feature_importances_[eq["svar"]] += eff_j
+            self.feature_importances_ /= J
+            self.feature_importances_ /= cov
         return self.feature_importances_ 
 

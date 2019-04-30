@@ -8,6 +8,7 @@ the minimum variance criterion.
 
 from bonsai.core.bonsaic import Bonsai
 import numpy as np
+import logging
 
 class RegTree(Bonsai):
     def __init__(self, 

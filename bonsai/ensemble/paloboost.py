@@ -22,7 +22,7 @@ class PaloBoost():
                 subsample_splts=1.0,
                 max_depth=3,
                 n_estimators=100,
-                reg_lambda=0.1,
+                reg_lambda=1.0,
                 do_prune=True,
                 random_state=0,
                 min_samples_split=2,
@@ -79,13 +79,14 @@ class PaloBoost():
             y_hat_oob = y_hat[oob_mask]
            
             nu_max = nu 
+            nu_min = 0 # NOTE
             if self.distribution == "gaussian": 
                 nu = np.mean(y_oob - y_hat_oob)/gamma
             elif self.distribution == "bernoulli":
                 num = np.sum(y_oob) + 0.5
                 denom = np.sum((1-y_oob)*np.exp(y_hat_oob)) + 1.0
                 nu = np.log(num/denom)/gamma
-            nu = np.clip(nu, 0, nu_max)
+            nu = np.clip(nu, nu_min, nu_max) 
 
             return nu
 
@@ -108,8 +109,8 @@ class PaloBoost():
         canvas_dim, canvas = bonsai_tmp.get_canvas()
         y_hat = np.full(n, self.intercept)
 
-
-        for i in range(self.n_estimators):
+        i = 0
+        while i < self.n_estimators:
 
             self.base_params["random_state"] += 1
             z = gradient(y, y_hat)
@@ -148,11 +149,14 @@ class PaloBoost():
                 avg_nu += (nu_j * cov_j)
 
             avg_nu = avg_nu/n
-            self.lr_stats.append([i, avg_nu])
+            if avg_nu < self.nu * 0.001: # NOTE
+                continue
 
+            self.lr_stats.append([i, avg_nu])
             estimator.load(leaves)
             estimator.update_feature_importances()
             self.estimators.append(estimator)
+            i += 1
 
         self.update_feature_importances()
 

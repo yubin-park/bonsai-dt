@@ -10,6 +10,7 @@ FYI, this is the default splitting criterion for Scikit-Learn GBM.
 
 from bonsai.core.bonsaic import Bonsai
 import numpy as np
+import logging
 
 class FriedmanTree(Bonsai):
     def __init__(self, 
@@ -45,8 +46,10 @@ class FriedmanTree(Bonsai):
             diff = y_hat_l - y_hat_r
             diff2 = diff*diff
             friedman_score = n_l * n_r / (n_l + n_r) * diff2
+            
             best_idx = np.argsort(friedman_score)[-1]
             ss = {"selected": avc[best_idx,:]}
+
             return ss
 
         def is_leaf(branch, branch_parent):

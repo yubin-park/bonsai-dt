@@ -40,8 +40,15 @@ cdef size_t _reorder(
     cdef size_t i_head = i_start
     cdef size_t i_tail = i_end - 1
     cdef size_t do_swap = 0
-    
+
     while i_head <= i_tail:
+
+        if i_tail == 0: 
+            # if tail is 'zero', should break
+            # otherwise, segmentation fault, 
+            # as size_t has no sign. 0 - 1 => huge number
+            break
+        
         do_swap = 0 
         if isnan(X[i_head,j_split]):
             if missing == 1: # send the missing to the right node

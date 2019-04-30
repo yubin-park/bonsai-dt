@@ -49,3 +49,8 @@ Thumbs.db
 ######################
 .ipynb_checkpoints
 .Rapp.history
+research/results/*
+research/data/6Hr-test-1.csv
+research/data/6Hr-train-1.csv
+
+

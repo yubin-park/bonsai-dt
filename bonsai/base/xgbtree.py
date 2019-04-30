@@ -19,6 +19,7 @@ class XGBTree(Bonsai):
                 reg_lambda=0.1,            # regularization
                 random_state=1234,
                 distribution="gaussian",
+                obj_tolerance=1.0,
                 **kwarg):
         
         self.max_depth=max_depth
@@ -27,6 +28,7 @@ class XGBTree(Bonsai):
         self.reg_lambda = reg_lambda
         self.distribution = distribution
         self.subsample_splts = np.clip(subsample_splts, 0.0, 1.0)
+        self.obj_tolerance = obj_tolerance
 
         def find_split(avc):
 
@@ -57,10 +59,15 @@ class XGBTree(Bonsai):
             obj = g_l*g_l/(h_l+self.reg_lambda) 
             obj = obj + g_r*g_r/(h_r+self.reg_lambda)
 
+
             y_l = g_l/(h_l+self.reg_lambda)
             y_r = g_r/(h_r+self.reg_lambda)
 
             best_idx = np.argsort(obj)[-1]
+
+            if (self.distribution == "bernoulli" and 
+                obj[best_idx] < self.obj_tolerance):
+                return None
 
             ss = {"selected": avc[best_idx,:],
                   "y@l": y_l[best_idx],

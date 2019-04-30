@@ -28,11 +28,11 @@ def test_regression():
                             learning_rate=1.0,
                             max_depth=4,
                             subsample=0.5),
-            "palofrst": PaloForest(distribution="gaussian",
-                            n_estimators=100,
-                            learning_rate=1.0,
-                            max_depth=4,
-                            subsample0=0.5),
+            #"palofrst": PaloForest(distribution="gaussian",
+            #                n_estimators=100,
+            #                learning_rate=1.0,
+            #                max_depth=4,
+            #                subsample0=0.5),
             "gbm": GBM(distribution="gaussian",
                         n_estimators=100, 
                         learning_rate=1.0,
@@ -82,24 +82,24 @@ def test_classification():
                                             test_size=0.5)
 
     models = {"palobst": PaloBoost(distribution="bernoulli",
-                            n_estimators=10, 
-                            learning_rate=1.0,
-                            max_depth=4,
+                            n_estimators=20, 
+                            learning_rate=0.1,
+                            max_depth=10,
                             subsample=0.5),
-            "palofrst": PaloForest(distribution="bernoulli",
-                            n_estimators=10, 
-                            learning_rate=1.0,
-                            max_depth=4,
-                            subsample0=0.5),
+            #"palofrst": PaloForest(distribution="bernoulli",
+            #                n_estimators=10, 
+            #                learning_rate=1.0,
+            #                max_depth=4,
+            #                subsample0=0.5),
             "gbm": GBM(distribution="bernoulli",
-                            n_estimators=10, 
-                            learning_rate=1.0,
-                            max_depth=4,
+                            n_estimators=20, 
+                            learning_rate=0.1,
+                            max_depth=10,
                             subsample=0.5),
             "sklearn": GradientBoostingClassifier(
-                        n_estimators=10, 
-                        learning_rate=1.0,
-                        max_depth=4, 
+                        n_estimators=20, 
+                        learning_rate=0.1,
+                        max_depth=10, 
                         subsample=0.5)}
 
     print("\n")
@@ -140,7 +140,7 @@ def test_dumpload():
     model = PaloForest(distribution="gaussian",
                             n_estimators=100,
                             learning_rate=1.0,
-                            max_depth=4,
+                            max_depth=5,
                             subsample0=0.5)
 
     print("\n")
@@ -182,7 +182,7 @@ def test_dumpload():
 
 if __name__=="__main__":
 
-    test_dumpload()
+    #test_dumpload()
     test_regression()
     test_classification()
 

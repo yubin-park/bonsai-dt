@@ -36,11 +36,13 @@ def get_reg_perf(models, X_train ,y_train, X_test, y_test, n_estimators):
         performance[name] = []
         if "XGBoost" not in name:
             for i, y_hat_i in enumerate(model.staged_predict(X_test)):
-                performance[name].append(np.clip(r2_score(y_test, y_hat_i), 0, 1))
+                performance[name].append(
+                            np.clip(r2_score(y_test, y_hat_i), 0, 1))
         else:
             for i in range(n_estimators):
                 y_hat_i = model.predict(X_test, ntree_limit=i+1)
-                performance[name].append(np.clip(r2_score(y_test, y_hat_i), 0, 1))
+                performance[name].append(
+                            np.clip(r2_score(y_test, y_hat_i), 0, 1))
     perf_df = pd.DataFrame(performance)
     perf_df['nEst'] = range(n_estimators)
     return perf_df
