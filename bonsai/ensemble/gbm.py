@@ -82,17 +82,17 @@ class GBM():
         self.feature_importances_ = np.zeros(m)
 
         bonsai_tmp = self.base_estimator()
-        bonsai_tmp.init_canvas(X)
-        canvas_dim, canvas = bonsai_tmp.get_canvas()
+        bonsai_tmp.init_cnvs(X)
+        xdim, cnvs, cnvsn = bonsai_tmp.get_cnvs()
         y_hat = np.zeros(n) + self.intercept
         for i in range(self.n_estimators):
             self.base_params["random_state"] += 1
             z = gradient(y, y_hat)
  
             estimator = self.base_estimator(**self.base_params)
-            estimator.set_canvas(canvas_dim, canvas)
+            estimator.set_cnvs(xdim, cnvs, cnvsn)
 
-            estimator.fit(X, z, init_canvas=False)
+            estimator.fit(X, z, init_cnvs=False)
 
             do_oob = estimator.is_stochastic()
             oob_mask = estimator.get_oob_mask()

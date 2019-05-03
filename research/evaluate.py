@@ -10,7 +10,9 @@ from xgboost import XGBRegressor
 from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import PolynomialFeatures
-import preprocessing as pp
+from sklearn.impute import SimpleImputer
+from sklearn.feature_selection import VarianceThreshold
+import preprocess as pp
 import utils
 import logging
 
@@ -24,8 +26,6 @@ def get_losdata():
                     if cname not in ["RecordID", "Length_of_stay"]]
     X = pp.simple_pp(data[col_names_x]).values
     y = data["Length_of_stay"].values
-    poly = PolynomialFeatures(interaction_only=True)
-    X = poly.fit_transform(X)
     print("- Number of features after poly: {}".format(X.shape[1]))
     return X, y
 
@@ -40,8 +40,6 @@ def get_mortdata():
                                         "In-hospital_death"]]
     X = pp.simple_pp(data[col_names_x]).values
     y = data["In-hospital_death"].values
-    poly = PolynomialFeatures(interaction_only=True)
-    X = poly.fit_transform(X)
     print("- Number of features after poly: {}".format(X.shape[1]))
     return X, y
 
@@ -51,9 +49,6 @@ def get_ca6hrdata():
     data = pd.concat([data0, data1], axis=0)
     y = data["ca"].values
     X = pp.simple_pp(data.drop(columns="ca")).values
-    poly = PolynomialFeatures(interaction_only=True)
-    X = poly.fit_transform(X)
-    print("- Number of features after poly: {}".format(X.shape[1]))
     return X, y
 
 def regtask(X, y, n_estimators, learning_rate, max_depth, n=30):
@@ -74,7 +69,7 @@ def regtask(X, y, n_estimators, learning_rate, max_depth, n=30):
                     subsample=0.7)}
     perf_df = pd.DataFrame(columns=["0. PaloBoost", "1. SGTB-Bonsai",
                                     "2. XGBoost", "nEst", "idx"])
-    for idx in range(10):
+    for idx in range(n):
         X_train, X_test, y_train, y_test = train_test_split(X, y, 
                                                 test_size = 0.5,
                                                 random_state=idx)

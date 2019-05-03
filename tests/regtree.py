@@ -13,7 +13,7 @@ from collections import Counter
 
 def test():
 
-    X, y = make_friedman1(n_samples=10000) 
+    X, y = make_friedman1(n_samples=100000) 
     #X, y = make_friedman2(n_samples=100000) 
     #X, y = make_friedman3(n_samples=100000) 
     n, m = X.shape

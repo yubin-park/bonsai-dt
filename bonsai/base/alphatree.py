@@ -10,7 +10,6 @@ This class implements a modified version of Alpha Tree that appeared in
 from bonsai.core.bonsaic import Bonsai
 import numpy as np
 
-PRECISION = 1e-12
 
 class AlphaTree(Bonsai):
 
@@ -27,6 +26,8 @@ class AlphaTree(Bonsai):
         self.min_samples_leaf = min_samples_leaf
 
         def find_split(avc):
+
+            PRECISION = 1e-12
 
             if avc.shape[0] == 0:
                 return None

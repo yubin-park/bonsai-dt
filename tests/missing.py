@@ -11,14 +11,24 @@ import numpy as np
 import json
 import time
 
+def get_Xy0():
+
+    x = np.array([np.nan]*100 + [1]*100)
+    X = x.reshape(x.shape[0], 1)
+    y = np.array([-1]*100 + [1]*100)
+    return X, y
+
+def get_Xy1():
+    X, y = make_friedman1(n_samples=100000) 
+    n, m = X.shape
+    x_p = np.percentile(X, q=20, axis=0)
+    for j in range(X.shape[1]):
+        X[X[:,j] < x_p[j],j] = np.nan
+    return X, y
 
 def test():
 
-    X, y = make_friedman1(n_samples=100000) 
-    n, m = X.shape
-    x_p = np.percentile(X, q=10, axis=0)
-    for j in range(X.shape[1]):
-        X[X[:,j] < x_p[j],j] = np.nan
+    X, y = get_Xy1()
     X_train, X_test, y_train, y_test = train_test_split(X, y, 
                                             test_size=0.2)
 
@@ -52,6 +62,8 @@ def test():
         #print(json.dumps(model.dump(), indent=2))
         print(" {0:12}   {1:.5f} sec    {2:.5f} sec    {3:.5f}".format(
             name, time_fit, time_pred, rmse))
+
+        #print(json.dumps(model.dump(), indent=2))
 
     print("-----------------------------------------------------")
     print("\n")

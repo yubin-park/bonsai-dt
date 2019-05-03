@@ -105,8 +105,8 @@ class PaloBoost():
         self.intercept = initialize(y)
         
         bonsai_tmp = self.base_estimator()
-        bonsai_tmp.init_canvas(X)
-        canvas_dim, canvas = bonsai_tmp.get_canvas()
+        bonsai_tmp.init_cnvs(X)
+        xdim, cnvs, cnvsn = bonsai_tmp.get_cnvs()
         y_hat = np.full(n, self.intercept)
 
         i = 0
@@ -116,8 +116,8 @@ class PaloBoost():
             z = gradient(y, y_hat)
 
             estimator = self.base_estimator(**self.base_params)
-            estimator.set_canvas(canvas_dim, canvas)
-            estimator.fit(X, z, init_canvas=False)
+            estimator.set_cnvs(xdim, cnvs, cnvsn)
+            estimator.fit(X, z, init_cnvs=False)
 
             oob_mask = estimator.get_oob_mask()
             do_oob = estimator.is_stochastic()

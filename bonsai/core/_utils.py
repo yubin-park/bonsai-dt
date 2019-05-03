@@ -61,55 +61,66 @@ def get_child_branch(ss, parent_branch, i_split, side):
 
     return child_branch
 
-def setup_canvas_na(m): 
-    # canvas for the missing values
-    canvas_na = np.zeros((m, 4))
-    canvas_na[:,0] = np.arange(m)
-    return canvas_na
-
-def setup_canvas(canvas_dim):
-    m = canvas_dim.shape[0] # number of features
-    n_canvas = int(canvas_dim[m-1,4]+canvas_dim[m-1,3])
-    canvas = np.zeros((n_canvas*2, 10), dtype=np.float, order="C")
-    canvas[:,0] = np.arange(n_canvas*2) # (svar, sval) index
-    for i in range(m):
-        x_min = canvas_dim[i, 1]
-        x_delta = canvas_dim[i, 2]
-        n_bin = int(canvas_dim[i, 3])
-        offset = canvas_dim[i, 4]
-        split_val = x_min
-        for j in range(n_bin):
-            cindex = int(offset + j)
-            split_val += x_delta 
-            canvas[cindex, 1] = i
-            canvas[cindex, 2] = split_val
-            canvas[(n_canvas+cindex), 1] = i
-            canvas[(n_canvas+cindex), 2] = split_val
-    return canvas
-
-def get_canvas_dim(X, n_hist_max):
+def get_xdim(X, n_hist_max):
 
     m = X.shape[1]
-    x_min = np.nanmin(np.ma.masked_invalid(X), axis=0)
-    x_max = np.nanmax(np.ma.masked_invalid(X), axis=0)
-    canvas_dim = np.zeros((m, 5), dtype=np.float, order="C")
+
+    # NOTE: x_min, x_max after removing outliers (top 1%, bottom 1%)
+    x_min = np.nanpercentile(X, q=0.5, axis=0)
+    x_max = np.nanpercentile(X, q=99.5, axis=0)
+    #x_min = np.nanmin(np.ma.masked_invalid(X), axis=0)
+    #x_max = np.nanmax(np.ma.masked_invalid(X), axis=0)
+
+    xdim = np.zeros((m, 5), dtype=np.float, order="C")
 
     # Format of cavas row: [j, x_min, x_delta, n_bin, offset]
     for j in range(m):
-        unique_values = np.unique(X[~np.isnan(X[:,j]),j])
-        n_unique = len(unique_values)
+        x_j = X[~np.isnan(X[:,j]),j]
+        unique_values = np.unique(x_j)
+        mask = np.logical_and(unique_values >= x_min[j], 
+                            unique_values <= x_max[j])
+        n_unique = np.sum(mask)
         if n_unique < n_hist_max: 
-            n_bin = n_unique
+            n_bin = max(n_unique, 1)
         else:
             n_bin = n_hist_max
-        canvas_dim[j, 0] = j
-        canvas_dim[j, 1] = x_min[j]
-        canvas_dim[j, 2] = (x_max[j] - x_min[j])/n_bin # delta
-        canvas_dim[j, 3] = max(n_bin - 1, 1)
+        xdim[j, 0] = j
+        xdim[j, 1] = x_min[j]
+        xdim[j, 2] = (x_max[j] - x_min[j])/n_bin # delta
+        xdim[j, 3] = max(n_bin - 1, 1)
         if j > 0:
-            canvas_dim[j, 4] = canvas_dim[j-1, 4] + canvas_dim[j-1, 3] 
+            xdim[j, 4] = xdim[j-1, 4] + xdim[j-1, 3] 
 
-    return canvas_dim       
+    return xdim       
+
+def get_cnvsn(xdim): 
+    # canvas for the missing values
+    m, _ = xdim.shape
+    cnvsn = np.zeros((m, 4))
+    cnvsn[:,0] = np.arange(m)
+    return cnvsn
+
+def get_cnvs(xdim):
+    m, _ = xdim.shape
+    n = int(np.sum(xdim[:,3]))
+    n_ = n * 2 # half for missing to the left, the other half to the right
+    cnvs = np.zeros((n_, 10), dtype=np.float, order="C")
+    cnvs[:,0] = np.arange(n_) 
+    for j in range(m):
+        x_min = xdim[j, 1]
+        x_delta = xdim[j, 2]
+        n_bin = int(xdim[j, 3])
+        offset = int(xdim[j, 4]) * 2
+        split_val = x_min
+        for k in range(n_bin):
+            i = offset + k
+            split_val += x_delta 
+            cnvs[i, 1] = j
+            cnvs[i, 2] = split_val
+            cnvs[(n_bin + i), 1] = j
+            cnvs[(n_bin + i), 2] = split_val
+            
+    return cnvs
 
 def reconstruct_tree(leaves):
 

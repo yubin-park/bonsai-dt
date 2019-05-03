@@ -72,13 +72,13 @@ def test_classification():
     models = {"palofrst_org": PaloForest(distribution="bernoulli",
                             n_estimators=10, 
                             learning_rate=1.0,
-                            max_depth=4,
+                            max_depth=5,
                             subsample0=0.5,
                             calibrate=False),
             "palofrst_clb": PaloForest(distribution="bernoulli",
                             n_estimators=10, 
                             learning_rate=1.0,
-                            max_depth=4,
+                            max_depth=5,
                             subsample0=0.5,
                             calibrate=True)}
 

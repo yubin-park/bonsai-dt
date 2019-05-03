@@ -12,6 +12,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import roc_auc_score
+from sklearn.preprocessing import PolynomialFeatures
 import numpy as np
 import time
 
@@ -19,6 +20,8 @@ import time
 def test_regression():
 
     X, y = make_friedman1(n_samples=10000, noise=5) 
+    poly = PolynomialFeatures(degree=2)
+    X = poly.fit_transform(X)
     n, m = X.shape
     X_train, X_test, y_train, y_test = train_test_split(X, y, 
                                             test_size=0.5)
@@ -76,15 +79,19 @@ def test_regression():
 def test_classification():
 
     X, y = make_hastie_10_2(n_samples=10000) 
+    poly = PolynomialFeatures(degree=2)
+    X = poly.fit_transform(X)
     y[y<0] = 0
     n, m = X.shape
     X_train, X_test, y_train, y_test = train_test_split(X, y, 
                                             test_size=0.5)
 
+    depth = 3
+    lr = 1.0
     models = {"palobst": PaloBoost(distribution="bernoulli",
                             n_estimators=20, 
-                            learning_rate=0.1,
-                            max_depth=10,
+                            learning_rate=lr,
+                            max_depth=depth,
                             subsample=0.5),
             #"palofrst": PaloForest(distribution="bernoulli",
             #                n_estimators=10, 
@@ -93,13 +100,13 @@ def test_classification():
             #                subsample0=0.5),
             "gbm": GBM(distribution="bernoulli",
                             n_estimators=20, 
-                            learning_rate=0.1,
-                            max_depth=10,
+                            learning_rate=lr,
+                            max_depth=depth,
                             subsample=0.5),
             "sklearn": GradientBoostingClassifier(
                         n_estimators=20, 
-                        learning_rate=0.1,
-                        max_depth=10, 
+                        learning_rate=lr,
+                        max_depth=depth, 
                         subsample=0.5)}
 
     print("\n")
@@ -183,6 +190,6 @@ def test_dumpload():
 if __name__=="__main__":
 
     #test_dumpload()
-    test_regression()
+    #test_regression()
     test_classification()
 

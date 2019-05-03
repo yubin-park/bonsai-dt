@@ -14,12 +14,13 @@ from bonsai.core._bonsaic import (
     apply_tree)
 from bonsai.core._utils import (
     reconstruct_tree,
-    get_canvas_dim,
-    setup_canvas_na,
-    setup_canvas,
+    get_xdim,
+    get_cnvsn,
+    get_cnvs,
     get_child_branch)
 import numpy as np
 import json
+from joblib import parallel_backend, Parallel, delayed
 from scipy.special import expit
 import time
 import logging
@@ -47,25 +48,52 @@ class Bonsai:
         self.tree_ind   = np.zeros((1,6), dtype=np.int)
         self.tree_val   = np.zeros((1,2), dtype=np.float)
         self.mask       = None
-        self.canvas_dim = None
-        self.canvas_na  = None
-        self.canvas     = None
+        self.xdim       = None
+        self.cnvs       = None
+        self.cnvsn      = None
+        self.parallel   = Parallel(n_jobs=2, prefer="threads")
+
+    def get_avc(self, X, y, z, i_start, i_end):
+        n, m = X.shape
+        y_i = y[i_start:i_end]
+        z_i = z[i_start:i_end]
+        self.cnvs[:,3:] = 0  # initialize canvas
+        self.cnvsn[:,1:] = 0 # initialize canvas for NA
+
+        # TODO: smart guidance on "n_jobs"
+        n_jobs = 2
+        k = int(np.ceil(m/n_jobs))
+        def psketch(i):
+            j_start = i*k
+            j_end = min(m, (i+1)*k)
+            jj_start = int(self.xdim[j_start,4]*2)
+            jj_end = int(self.xdim[j_end-1,4]*2 + 
+                        self.xdim[j_end-1,3]*2)
+            X_ij = X[i_start:i_end,j_start:j_end]
+            xdim_j = self.xdim[j_start:j_end,:]
+            cnvs_j = self.cnvs[jj_start:jj_end,:]
+            cnvsn_j = self.cnvsn[j_start:j_end,:]
+            sketch(X_ij, y_i, z_i, xdim_j, cnvs_j, cnvsn_j)
+            return 0
+
+        t0 = time.time()
+        with parallel_backend("threading", n_jobs=n_jobs):
+            Parallel()(delayed(psketch)(i) for i in range(n_jobs))
+        t1 = time.time() - t0
+        print(i_end-i_start, t1)
+
+        return self.cnvs
 
     def split_branch(self, X, y, z, branch):
         """Splits the data (X, y) into two children based on 
            the selected splitting variable and value pair.
         """
 
-        i_start = int(branch["i_start"])
-        i_end = int(branch["i_end"])
+        i_start = branch["i_start"]
+        i_end = branch["i_end"]
    
-        # Get AVC-GROUP 
-        avc = sketch(X, y, z, 
-                    self.canvas, 
-                    self.canvas_dim, 
-                    self.canvas_na, 
-                    i_start, i_end)
-
+        # Get AVC-GROUP
+        avc = self.get_avc(X, y, z, i_start, i_end)
         if avc.shape[0] < 2:
             branch["is_leaf"] = True
             return [branch]
@@ -100,9 +128,9 @@ class Bonsai:
 
     def grow_tree(self, X, y, z, branches):
         """Grows a tree by recursively partitioning the data (X, y)."""
-
         branches_new = []
         leaves_new = []
+
         for branch in branches:
             for child in self.split_branch(X, y, z, branch):
                 if child["is_leaf"]:
@@ -111,7 +139,7 @@ class Bonsai:
                     branches_new.append(child)
         return branches_new, leaves_new
 
-    def fit(self, X, y, init_canvas=True): 
+    def fit(self, X, y, init_cnvs=True): 
         """Fit a tree to the data (X, y)."""
 
         n, m = X.shape
@@ -123,8 +151,7 @@ class Bonsai:
             p = expit(y) 
             z = p * (1.0 - p)
         else:
-            z = np.zeros(n) 
-
+            z = np.ones(n) 
  
         if self.subsample < 1.0:
             np.random.seed(self.random_state)
@@ -148,23 +175,24 @@ class Bonsai:
                     "y_lst": [], 
                     "n_samples": n}]
 
-        if init_canvas:
-            self.canvas_dim = get_canvas_dim(X, self.n_hist_max)
-            self.canvas_na  = setup_canvas_na(self.canvas_dim.shape[0])
-            self.canvas     = setup_canvas(self.canvas_dim)
+        if init_cnvs:
+            self.init_cnvs(X)
 
         self.leaves = []
-        if (self.canvas_dim is not None and 
-            self.canvas is not None):
-            while len(branches) > 0:
-                branches, leaves_new = self.grow_tree(X, y, z, branches)
-                self.leaves += leaves_new
+        if self.xdim is None or self.cnvs is None or self.cnvsn is None:
+            logging.error("canvas is not initialized. no tree trained")
+            return 1
+
+        while len(branches) > 0:
+            branches, leaves_new = self.grow_tree(X, y, z, branches)
+            self.leaves += leaves_new
 
         # integer index for leaves (from 0 to len(leaves))
         for i, leaf in enumerate(self.leaves): 
             leaf["index"] = i 
         self.update_feature_importances()
         self.tree_ind, self.tree_val = reconstruct_tree(self.leaves)
+        return 0
 
     def predict(self, X, output_type="response"):
         """Predict y by applying the trained tree to X."""
@@ -174,18 +202,20 @@ class Bonsai:
         out = apply_tree(self.tree_ind, self.tree_val, X, y, output_type)
         return out 
 
-    def init_canvas(self, X):
-        self.canvas_dim = get_canvas_dim(X, self.n_hist_max)
-        self.canvas = setup_canvas(self.canvas_dim)
-        self.canvas_na = setup_canvas_na(self.canvas_dim.shape[0])
+    def init_cnvs(self, X):
+        self.xdim = get_xdim(X, self.n_hist_max)
+        self.cnvs = get_cnvs(self.xdim)
+        self.cnvsn = get_cnvsn(self.xdim)
 
-    def set_canvas(self, canvas_dim, canvas):
-        self.canvas_dim = canvas_dim
-        self.canvas = canvas
-        self.canvas_na = setup_canvas_na(self.canvas_dim.shape[0])
-
-    def get_canvas(self):
-        return self.canvas_dim, self.canvas
+    def set_cnvs(self, xdim, cnvs, cnvsn):
+        self.xdim = xdim
+        self.cnvs = cnvs
+        self.cnvsn = cnvsn
+        self.cnvs[:,3:] = 0  # initialize canvas
+        self.cnvsn[:,1:] = 0 # initialize canvas for NA
+ 
+    def get_cnvs(self):
+        return self.xdim, self.cnvs, self.cnvsn
 
     def is_stochastic(self):
         return self.subsample < 1.0

@@ -6,7 +6,7 @@ NAME = "bonsai"
 VERSION = "0.0.1"
 DESCR = "Bonsai is a programmable decision tree framework."
 URL = "https://yubin-park.github.io/bonsai-dt/"
-REQUIRES = ["numpy", "cython"]
+REQUIRES = ["numpy", "cython", "joblib"]
 
 AUTHOR = "Yubin Park"
 EMAIL = "yubin.park@gmail.com"

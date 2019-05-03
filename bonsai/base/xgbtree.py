@@ -16,7 +16,7 @@ class XGBTree(Bonsai):
                 min_samples_leaf=1,
                 subsample=1.0,
                 subsample_splts=1.0,
-                reg_lambda=0.1,            # regularization
+                reg_lambda=1.0,            # regularization
                 random_state=1234,
                 distribution="gaussian",
                 obj_tolerance=1.0,

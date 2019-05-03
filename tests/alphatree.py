@@ -8,21 +8,25 @@ from sklearn.datasets import make_hastie_10_2
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import roc_auc_score
+from sklearn.preprocessing import PolynomialFeatures
 import numpy as np
 import time
 
 def test():
 
-    X, y = make_hastie_10_2(n_samples=100000) 
+    X, y = make_hastie_10_2(n_samples=1000000) 
     y[y==-1.0] = 0.0        # AlphaTree accepts [0, 1] not [-1, 1]
+    poly = PolynomialFeatures(degree=2)
+    X = poly.fit_transform(X)
     n, m = X.shape
     X_train, X_test, y_train, y_test = train_test_split(X, y, 
                                             test_size=0.2)
-
-    models = {"alpha_1-c45": C45Tree(max_depth=10),
-            "alpha_2-cart": GiniTree(max_depth=10),
-            "alpha_3": AlphaTree(alpha=3.0, max_depth=10),
-            "sklearn": DecisionTreeClassifier(max_depth=10)}
+    print(X.shape) 
+    depth = 7
+    models = {"alpha_1-c45": C45Tree(max_depth=depth),
+            "alpha_2-cart": GiniTree(max_depth=depth),
+            "alpha_3": AlphaTree(alpha=3.0, max_depth=depth),
+            "sklearn": DecisionTreeClassifier(max_depth=depth)}
 
     print("\n")
     print("-----------------------------------------------------")
