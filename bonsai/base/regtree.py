@@ -18,13 +18,14 @@ class RegTree(Bonsai):
                 min_varsum_decrease=0.0, 
                 subsample=1.0,
                 random_state=1234,
+                n_jobs=-1,
                 **kwarg):
 
         self.max_depth=max_depth
         self.min_samples_split = min_samples_split
         self.min_samples_leaf = min_samples_leaf
         self.min_varsum_decrease = min_varsum_decrease
- 
+
         def find_split(avc):
 
             if avc.shape[0] == 0:
@@ -71,8 +72,9 @@ class RegTree(Bonsai):
         Bonsai.__init__(self, 
                         find_split, 
                         is_leaf,
-                        subsample=subsample, 
-                        random_state=random_state,
-                        z_type="M2")
+                        subsample = subsample, 
+                        random_state = random_state,
+                        n_jobs = n_jobs,
+                        z_type = "M2")
 
 

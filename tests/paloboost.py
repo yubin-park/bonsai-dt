@@ -190,6 +190,6 @@ def test_dumpload():
 if __name__=="__main__":
 
     #test_dumpload()
-    #test_regression()
+    test_regression()
     test_classification()
 

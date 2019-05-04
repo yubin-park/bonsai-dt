@@ -20,7 +20,7 @@ from bonsai.core._utils import (
     get_child_branch)
 import numpy as np
 import json
-from joblib import parallel_backend, Parallel, delayed
+from joblib import parallel_backend, Parallel, delayed, cpu_count
 from scipy.special import expit
 import time
 import logging
@@ -30,10 +30,11 @@ class Bonsai:
     def __init__(self, 
                 find_split,
                 is_leaf, 
-                n_hist_max=512, 
-                subsample=1.0,        # subsample rate for rows (samples)
-                random_state=None,
-                z_type="M2"):
+                n_hist_max = 512, 
+                subsample = 1.0, # subsample rate for rows (samples)
+                random_state = None,
+                z_type = "M2",
+                n_jobs = -1):
 
         self.find_split = find_split # user-defined
         self.is_leaf = is_leaf       # user-defined
@@ -51,9 +52,11 @@ class Bonsai:
         self.xdim       = None
         self.cnvs       = None
         self.cnvsn      = None
-        self.parallel   = Parallel(n_jobs=2, prefer="threads")
+        self.n_jobs     = n_jobs
+        if self.n_jobs < 0:
+            self.n_jobs = cpu_count()
 
-    def get_avc(self, X, y, z, i_start, i_end):
+    def get_avc(self, X, y, z, i_start, i_end, parallel):
         n, m = X.shape
         y_i = y[i_start:i_end]
         z_i = z[i_start:i_end]
@@ -61,8 +64,7 @@ class Bonsai:
         self.cnvsn[:,1:] = 0 # initialize canvas for NA
 
         # TODO: smart guidance on "n_jobs"
-        n_jobs = 2
-        k = int(np.ceil(m/n_jobs))
+        k = int(np.ceil(m/self.n_jobs))
         def psketch(i):
             j_start = i*k
             j_end = min(m, (i+1)*k)
@@ -76,15 +78,14 @@ class Bonsai:
             sketch(X_ij, y_i, z_i, xdim_j, cnvs_j, cnvsn_j)
             return 0
 
-        t0 = time.time()
-        with parallel_backend("threading", n_jobs=n_jobs):
-            Parallel()(delayed(psketch)(i) for i in range(n_jobs))
-        t1 = time.time() - t0
-        print(i_end-i_start, t1)
+        #t0 = time.time()
+        parallel(delayed(psketch)(i) for i in range(self.n_jobs))
+        #t1 = time.time() - t0
+        #print(i_end-i_start, t1)
 
         return self.cnvs
 
-    def split_branch(self, X, y, z, branch):
+    def split_branch(self, X, y, z, branch, parallel):
         """Splits the data (X, y) into two children based on 
            the selected splitting variable and value pair.
         """
@@ -93,7 +94,7 @@ class Bonsai:
         i_end = branch["i_end"]
    
         # Get AVC-GROUP
-        avc = self.get_avc(X, y, z, i_start, i_end)
+        avc = self.get_avc(X, y, z, i_start, i_end, parallel)
         if avc.shape[0] < 2:
             branch["is_leaf"] = True
             return [branch]
@@ -126,13 +127,13 @@ class Bonsai:
 
         return [left_branch, right_branch]
 
-    def grow_tree(self, X, y, z, branches):
+    def grow_tree(self, X, y, z, branches, parallel):
         """Grows a tree by recursively partitioning the data (X, y)."""
         branches_new = []
         leaves_new = []
 
         for branch in branches:
-            for child in self.split_branch(X, y, z, branch):
+            for child in self.split_branch(X, y, z, branch, parallel):
                 if child["is_leaf"]:
                     leaves_new.append(child)
                 else:
@@ -183,9 +184,11 @@ class Bonsai:
             logging.error("canvas is not initialized. no tree trained")
             return 1
 
-        while len(branches) > 0:
-            branches, leaves_new = self.grow_tree(X, y, z, branches)
-            self.leaves += leaves_new
+        with Parallel(n_jobs=self.n_jobs, prefer="threads") as parallel:
+            while len(branches) > 0:
+                branches, leaves_new = self.grow_tree(X, y, z, 
+                                            branches, parallel)
+                self.leaves += leaves_new
 
         # integer index for leaves (from 0 to len(leaves))
         for i, leaf in enumerate(self.leaves): 
