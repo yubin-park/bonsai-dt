@@ -19,6 +19,7 @@ class FriedmanTree(Bonsai):
                 min_samples_leaf=1,
                 subsample=1.0,
                 random_state=1234,
+                n_jobs=-1,
                 **kwarg):
 
         self.max_depth=max_depth
@@ -65,6 +66,7 @@ class FriedmanTree(Bonsai):
                         is_leaf,
                         subsample=subsample, 
                         random_state=random_state,
+                        n_jobs=n_jobs,
                         z_type="M2")
 
 

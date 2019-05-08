@@ -28,13 +28,13 @@ class RandomForests():
             self.base_params["random_state"] = 1
  
         bonsai_tmp = RegTree()
-        bonsai_tmp.init_canvas(X)
-        canvas_dim, canvas = bonsai_tmp.get_canvas()
+        bonsai_tmp.init_cnvs(X)
+        xdim, cnvs, cnvsn = bonsai_tmp.get_cnvs()
         for i in range(self.n_estimators):
             self.base_params["random_state"] += 1
             estimator = self.base_estimator(**self.base_params)
-            estimator.set_canvas(canvas_dim, canvas)
-            estimator.fit(X, y, init_canvas=False)
+            estimator.set_cnvs(xdim, cnvs, cnvsn)
+            estimator.fit(X, y, init_cnvs=False)
             self.estimators.append(estimator)
 
     def predict(self, X):

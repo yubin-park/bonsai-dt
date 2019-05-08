@@ -16,10 +16,11 @@ class XGBTree(Bonsai):
                 min_samples_leaf=1,
                 subsample=1.0,
                 subsample_splts=1.0,
-                reg_lambda=1.0,            # regularization
+                reg_lambda=1e-2,            # regularization
+                obj_tolerance=1e-2,
                 random_state=1234,
                 distribution="gaussian",
-                obj_tolerance=1.0,
+                n_jobs=-1,
                 **kwarg):
         
         self.max_depth=max_depth
@@ -88,6 +89,7 @@ class XGBTree(Bonsai):
                         is_leaf,
                         subsample=subsample, 
                         random_state=random_state,
+                        n_jobs = n_jobs,
                         z_type="Hessian")
 
     def prune(self, X, y, y_hat, nu, max_iter=1):

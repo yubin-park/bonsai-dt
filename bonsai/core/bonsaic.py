@@ -140,7 +140,7 @@ class Bonsai:
                     branches_new.append(child)
         return branches_new, leaves_new
 
-    def fit(self, X, y, init_cnvs=True): 
+    def fit(self, X, y, init_cnvs=True, parallel=None): 
         """Fit a tree to the data (X, y)."""
 
         n, m = X.shape
@@ -184,7 +184,14 @@ class Bonsai:
             logging.error("canvas is not initialized. no tree trained")
             return 1
 
-        with Parallel(n_jobs=self.n_jobs, prefer="threads") as parallel:
+        if parallel is None:
+            with Parallel(n_jobs=self.n_jobs, prefer="threads") as parallel:
+                while len(branches) > 0:
+                    branches, leaves_new = self.grow_tree(X, y, z, 
+                                                branches, parallel)
+                    self.leaves += leaves_new
+        else:
+            # parallel-context is already given
             while len(branches) > 0:
                 branches, leaves_new = self.grow_tree(X, y, z, 
                                             branches, parallel)

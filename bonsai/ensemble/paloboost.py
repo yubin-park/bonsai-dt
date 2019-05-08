@@ -10,6 +10,8 @@ from bonsai.base.xgbtree import XGBTree
 from collections import Counter
 import numpy as np
 from scipy.special import expit
+import logging
+from joblib import Parallel, delayed, cpu_count
 
 PRECISION = 1e-5
 
@@ -24,10 +26,14 @@ class PaloBoost():
                 n_estimators=100,
                 reg_lambda=1.0,
                 do_prune=True,
+                n_jobs=-1,
                 random_state=0,
                 min_samples_split=2,
                 min_samples_leaf=1):
         self.base_estimator = XGBTree
+        self.n_jobs = n_jobs
+        if self.n_jobs < 0:
+            self.n_jobs = cpu_count()
         self.base_params = {"subsample": subsample,
                             "max_depth": max_depth,
                             "distribution": distribution,
@@ -35,7 +41,8 @@ class PaloBoost():
                             "random_state": random_state,
                             "subsample_splts": subsample_splts,
                             "min_samples_split": min_samples_split,
-                            "min_samples_leaf": min_samples_leaf}
+                            "min_samples_leaf": min_samples_leaf,
+                            "n_jobs": n_jobs}
         self.distribution = distribution
         self.nu = learning_rate
         self.n_estimators = n_estimators
@@ -109,54 +116,50 @@ class PaloBoost():
         xdim, cnvs, cnvsn = bonsai_tmp.get_cnvs()
         y_hat = np.full(n, self.intercept)
 
-        i = 0
-        while i < self.n_estimators:
+        with Parallel(n_jobs=self.n_jobs, prefer="threads") as parallel:
+            for i in range(self.n_estimators):
 
-            self.base_params["random_state"] += 1
-            z = gradient(y, y_hat)
+                self.base_params["random_state"] += 1
+                z = gradient(y, y_hat)
 
-            estimator = self.base_estimator(**self.base_params)
-            estimator.set_cnvs(xdim, cnvs, cnvsn)
-            estimator.fit(X, z, init_cnvs=False)
+                estimator = self.base_estimator(**self.base_params)
+                estimator.set_cnvs(xdim, cnvs, cnvsn)
+                estimator.fit(X, z, init_cnvs=False, parallel=parallel)
 
-            oob_mask = estimator.get_oob_mask()
-            do_oob = estimator.is_stochastic()
+                oob_mask = estimator.get_oob_mask()
+                do_oob = estimator.is_stochastic()
 
-            # NOTE: prune
-            if do_oob and self.do_prune:
-                n_leaves_bf_prune = len(estimator.dump())
-                estimator.prune(X, y, y_hat, self.nu)
-                n_leaves_af_prune = len(estimator.dump())
-                self.prune_stats.append([i, n_leaves_bf_prune,
-                                        n_leaves_af_prune])
+                # NOTE: prune
+                if do_oob and self.do_prune:
+                    n_leaves_bf_prune = len(estimator.dump())
+                    estimator.prune(X, y, y_hat, self.nu)
+                    n_leaves_af_prune = len(estimator.dump())
+                    self.prune_stats.append([i, n_leaves_bf_prune,
+                                            n_leaves_af_prune])
 
-            t = estimator.predict(X, "index")
-            leaves = estimator.dump()
-            avg_nu = 0.0
-            for j, leaf in enumerate(leaves):
-                mask_j = (t==j)
-                gamma_j = leaf["y"]
+                t = estimator.predict(X, "index")
+                leaves = estimator.dump()
+                avg_nu = 0.0
+                for j, leaf in enumerate(leaves):
+                    mask_j = (t==j)
+                    gamma_j = leaf["y"]
 
-                # NOTE: learning-rate adjustment
-                nu_j = self.nu
-                cov_j = np.sum(mask_j)
-                if do_oob:
-                    oob_mask_j = np.logical_and(mask_j, oob_mask)
-                    nu_j = get_nu(y, y_hat, oob_mask_j, gamma_j, nu_j)
+                    # NOTE: learning-rate adjustment
+                    nu_j = self.nu
+                    cov_j = np.sum(mask_j)
+                    if do_oob:
+                        oob_mask_j = np.logical_and(mask_j, oob_mask)
+                        nu_j = get_nu(y, y_hat, oob_mask_j, gamma_j, nu_j)
 
-                leaf["y"] = gamma_j * nu_j
-                y_hat[mask_j] += (gamma_j * nu_j)
-                avg_nu += (nu_j * cov_j)
+                    leaf["y"] = gamma_j * nu_j
+                    y_hat[mask_j] += (gamma_j * nu_j)
+                    avg_nu += (nu_j * cov_j)
 
-            avg_nu = avg_nu/n
-            if avg_nu < self.nu * 0.001: # NOTE
-                continue
-
-            self.lr_stats.append([i, avg_nu])
-            estimator.load(leaves)
-            estimator.update_feature_importances()
-            self.estimators.append(estimator)
-            i += 1
+                avg_nu = avg_nu/n
+                self.lr_stats.append([i, avg_nu])
+                estimator.load(leaves)
+                estimator.update_feature_importances()
+                self.estimators.append(estimator)
 
         self.update_feature_importances()
 

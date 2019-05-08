@@ -13,6 +13,7 @@ import numpy as np
 from scipy.special import expit
 import time
 import logging
+from joblib import Parallel, delayed, cpu_count
 
 PRECISION = 1e-5
 
@@ -25,11 +26,16 @@ class GBM():
                 learning_rate=0.1,
                 n_estimators=100,
                 reg_lambda=0.1,
+                n_jobs=-1,
                 random_state=0):
         self.base_estimator = FriedmanTree
+        self.n_jobs = n_jobs
+        if self.n_jobs < 0:
+            self.n_jobs = cpu_count()
         self.base_params = {"subsample": subsample,
                             "max_depth": max_depth,
-                            "random_state": random_state}
+                            "random_state": random_state,
+                            "n_jobs": self.n_jobs}
         self.distribution = distribution
         self.nu = learning_rate
         self.n_estimators = n_estimators
@@ -85,31 +91,32 @@ class GBM():
         bonsai_tmp.init_cnvs(X)
         xdim, cnvs, cnvsn = bonsai_tmp.get_cnvs()
         y_hat = np.zeros(n) + self.intercept
-        for i in range(self.n_estimators):
-            self.base_params["random_state"] += 1
-            z = gradient(y, y_hat)
- 
-            estimator = self.base_estimator(**self.base_params)
-            estimator.set_cnvs(xdim, cnvs, cnvsn)
+        with Parallel(n_jobs=self.n_jobs, prefer="threads") as parallel:
+            for i in range(self.n_estimators):
+                self.base_params["random_state"] += 1
+                z = gradient(y, y_hat)
+     
+                estimator = self.base_estimator(**self.base_params)
+                estimator.set_cnvs(xdim, cnvs, cnvsn)
 
-            estimator.fit(X, z, init_cnvs=False)
+                estimator.fit(X, z, init_cnvs=False, parallel=parallel)
 
-            do_oob = estimator.is_stochastic()
-            oob_mask = estimator.get_oob_mask()
-            t = estimator.predict(X, "index")
-            leaves = estimator.dump()
+                do_oob = estimator.is_stochastic()
+                oob_mask = estimator.get_oob_mask()
+                t = estimator.predict(X, "index")
+                leaves = estimator.dump()
 
-            for j, leaf in enumerate(leaves):
-                leaf_mask = (t==j)
-                mask_j = np.logical_and(leaf_mask, ~oob_mask)
-                gamma_j = estimate_gamma(y[mask_j], y_hat[mask_j])
-                leaf["_y"] = leaf["y"]
-                leaf["y"] = gamma_j * self.nu
-                y_hat[leaf_mask] += leaf["y"]
+                for j, leaf in enumerate(leaves):
+                    leaf_mask = (t==j)
+                    mask_j = np.logical_and(leaf_mask, ~oob_mask)
+                    gamma_j = estimate_gamma(y[mask_j], y_hat[mask_j])
+                    leaf["_y"] = leaf["y"]
+                    leaf["y"] = gamma_j * self.nu
+                    y_hat[leaf_mask] += leaf["y"]
 
-            estimator.load(leaves)
-            estimator.update_feature_importances()
-            self.estimators.append(estimator)
+                estimator.load(leaves)
+                estimator.update_feature_importances()
+                self.estimators.append(estimator)
 
         self.update_feature_importances()
 
