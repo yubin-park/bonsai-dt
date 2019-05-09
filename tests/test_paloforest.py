@@ -4,7 +4,7 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import roc_auc_score
 import numpy as np
-from misc import make_hastie_11_2, make_freedman1_poly
+from misc import make_hastie_11_2, make_friedman1_poly
 from sklearn.metrics import brier_score_loss
 import unittest
 

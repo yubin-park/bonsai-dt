@@ -4,7 +4,7 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import roc_auc_score
 import numpy as np
-from misc import make_hastie_11_2, make_freedman1_poly
+from misc import make_hastie_11_2, make_friedman1_poly
 import unittest
 
 class PaloboostTestCase(unittest.TestCase):
@@ -51,7 +51,7 @@ class PaloboostTestCase(unittest.TestCase):
         max_depth = 7
         lr = 0.1
 
-        X, y = make_freedman1_poly(n_samples=n_samples) 
+        X, y = make_friedman1_poly(n_samples=n_samples) 
         X_train, X_test, y_train, y_test = train_test_split(X, y, 
                                                 test_size=test_size)
 

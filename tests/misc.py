@@ -14,7 +14,7 @@ def make_hastie_11_2(n_samples):
     X = np.hstack((X, z.reshape(n_samples, 1)))
     return X, y
 
-def make_freedman1_poly(n_samples, noise=5):
+def make_friedman1_poly(n_samples, noise=5):
     X, y = make_friedman1(n_samples=n_samples, noise=noise) 
     poly = PolynomialFeatures()
     X = poly.fit_transform(X)
