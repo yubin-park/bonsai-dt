@@ -67,6 +67,8 @@ class Bonsai:
         k = int(np.ceil(m/self.n_jobs))
         def psketch(i):
             j_start = i*k
+            if j_start > m-1:
+                return 1
             j_end = min(m, (i+1)*k)
             jj_start = int(self.xdim[j_start,4]*2)
             jj_end = int(self.xdim[j_end-1,4]*2 + 
