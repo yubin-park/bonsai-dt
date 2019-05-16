@@ -3,27 +3,25 @@ library(ggthemes)
 
 getBest <- function(data){
 	out <- NULL
-	for(i in unique(data$idx)){
-		data.sub <- subset(data, idx==i)
-		df <- data.frame(model=c("0. PaloBoost", "1. SGTB-Bonsai", "2. XGBoost"),
-				   		 value=c(max(data.sub[,1]), 
-				   		 		max(data.sub[,2]),
-				   		 		max(data.sub[,3])))
-		out <- rbind(out, df)
+	for(m in unique(data$model)){
+		for(i in unique(data$b_idx)){
+			data.sub <- subset(data, b_idx==i & model==m)
+			df <- data.frame(model=m, value=max(data.sub$value))
+			out <- rbind(out, df)
+		}
 	}
 	return(out)
 }
 getLast <- function(data){
 	out <- NULL
-	for(i in unique(data$idx)){
-		data.sub <- subset(data, idx==i)
-		max.iter <- max(data.sub$nEst)
-		data.sub <- subset(data.sub, nEst==max.iter)
-		df <- data.frame(model=c("0. PaloBoost", "1. SGTB-Bonsai", "2. XGBoost"),
-				   		 value=c(data.sub[1,1], 
-				   		 		data.sub[1,2],
-				   		 		data.sub[1,3]))
-		out <- rbind(out, df)
+	for(m in unique(data$model)){
+		for(i in unique(data$b_idx)){
+			data.sub <- subset(data, b_idx==i & model==m)
+			max.iter <- max(data.sub$n_est)
+			data.sub <- subset(data.sub, n_est==max.iter)
+			df <- data.frame(model=m, value=data.sub$value[1])
+			out <- rbind(out, df)
+		}
 	}
 	return(out)	
 }
@@ -35,24 +33,68 @@ getPerf <- function(data, mode){
 	}
 }
 
+
+data <- NULL
+for(lr in c(0.1, 0.5, 1.0)){
+	fn <- paste0("results/prune",
+					"_", sprintf("%.1f", lr), 
+					"_3.csv")
+	d.raw <- read.csv(fn)
+	d.raw$lr <- paste0("max.learning.rate=",lr)
+	data <- rbind(data, d.raw)
+}
+data$prune_ratio <- (data$nodes_pre - data$nodes_post)/data$nodes_pre
+ggplot(data, aes(x=iteration, y=prune_ratio)) + 
+geom_line(alpha=0.5, size=0.1) + 
+stat_smooth(method="loess", size=1) + 
+facet_wrap(.~lr) + 
+theme_gdocs() + 
+scale_fill_few() + 
+ylab("Prune Ratio") + 
+xlab("Iterations")
+fn_out <- "results/prune_ratio.png"
+ggsave(fn_out, width=8, height=3)
+
+data <- NULL
+for(lr in c(0.1, 0.5, 1.0)){
+	fn <- paste0("results/lr",
+					"_", sprintf("%.1f", lr), 
+					"_3.csv")
+	d.raw <- read.csv(fn)
+	d.raw$max.lr <- paste0("max.learning.rate=",lr)
+	data <- rbind(data, d.raw)
+}
+ggplot(data, aes(x=iteration, y=lr)) + 
+geom_line(alpha=0.5, size=0.1) + 
+stat_smooth(method="loess", size=1) + 
+facet_wrap(.~max.lr, scale="free") + 
+theme_gdocs() + 
+scale_fill_few() + 
+ylab("Adjusted Learning Rate") + 
+xlab("Iterations")
+fn_out <- "results/learning_rate.png"
+ggsave(fn_out, width=8, height=3)
+
+
+
 # Summary Plots
 
-dataname <- "friedman"
-ylab <- "R-squared"
+#dataname <- "friedman"
+#ylab <- "R-squared"
 
-dataname <- "hastie"
-ylab <- "AUROC"
+#dataname <- "hastie"
+#ylab <- "AUROC"
 
-dataname <- "mort"
-ylab <- "AUROC"
+#dataname <- "los"
+#ylab <- "R-squared"
 
-dataname <- "los"
-ylab <- "R-squared"
+#dataname <- "mort"
+#ylab <- "AUROC"
 
 dataname <- "ca6hr"
 ylab <- "AUROC"
 
-depth.lst <- c(5, 7)
+depth.lst <- c(3, 4, 5)
 lr.lst <- c(0.1, 0.5, 1.0)
 param.df <- expand.grid(depth=depth.lst, 
 						lr=lr.lst)
@@ -61,10 +103,10 @@ for(i in 1:nrow(param.df)){
 	p <- param.df[i,]
 	fn <- paste0("results/",
 					dataname,
-					"_500", 
+					"_200", 
 					"_", sprintf("%.1f", p$lr), 
 					"_", p$depth, 
-					"_0.7.csv")
+					".csv")
 	d.raw <- read.csv(fn)
 	for(mode in c("best", "last")){
 		d.perf <- getPerf(d.raw, mode)
@@ -88,46 +130,29 @@ ggsave(fn_out, width=8, height=6)
 
 
 # Iteration x Performance curves
-
-dataname <- "friedman"
-ylab <- "R-squared"
-
-dataname <- "hastie"
-ylab <- "AUROC"
-
-depth.lst <- c(5, 7)
-lr.lst <- c(0.1, 0.5, 1.0)
-param.df <- expand.grid(depth=depth.lst, 
-						lr=lr.lst)
 data <- NULL
 for(i in 1:nrow(param.df)){
 	p <- param.df[i,]
 	fn <- paste0("results/",
 					dataname,
-					"_500", 
+					"_200", 
 					"_", sprintf("%.1f", p$lr), 
 					"_", p$depth, 
-					"_0.7.csv")
+					".csv")
 	d.raw <- read.csv(fn)
-	d.raw <- subset(d.raw, idx==0)
 	d.raw$depth <- paste0("tree.depth=",p$depth)
-	d.raw$lr <- paste0("learning.rate=",p$lr)
-	model.lst <- c("0. Paloboost", "1. SGTB-Bonsai", "2. XGBoost")
-	for(j in 1:3){
-		d.model <- d.raw[,c(j,4,5,6,7)]
-		d.model$model <- model.lst[j]
-		colnames(d.model) <- c("value", "nEst", "idx", "depth", "lr", "model")
-		data <- rbind(data, d.model)
-	}
+	d.raw$lr <- paste0("max.learning.rate=",p$lr)
+	data <- rbind(data, d.raw)
 }
 
-ggplot(data, aes(x=nEst, y=value, colour=model, linetype=model)) + 
-geom_line(size=1) + 
+ggplot(data, aes(x=n_est, y=value, colour=model, linetype=model)) + 
+stat_smooth(size=1, method="loess") + 
 facet_grid(depth~as.factor(lr)) + 
 theme_gdocs() + 
+theme(legend.position="top", legend.direction="horizontal") +
 scale_fill_few() + 
 ylab(ylab) + 
 xlab("n_estimators")
 
 fn_out <- paste0("results/", dataname, "_curves.png")
-ggsave(fn_out, width=14, height=6)
+ggsave(fn_out, width=8, height=6)

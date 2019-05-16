@@ -22,6 +22,10 @@ def get_friedman():
     n_samples = 10000
     noise = 5
     X, y = make_friedman1(n_samples=n_samples, noise=noise) 
+    poly = PolynomialFeatures(degree=2, include_bias=False,
+                            interaction_only=True)
+    X = poly.fit_transform(X)
+    print(X.shape)
     return X, y
 
 def get_hastie():
@@ -37,6 +41,8 @@ def get_hastie():
     poly = PolynomialFeatures(degree=2, include_bias=False,
                             interaction_only=True)
     X = poly.fit_transform(X)
+    print(np.mean(y))
+    print(X.shape)
     return X, y
 
 def get_losdata():
@@ -44,20 +50,20 @@ def get_losdata():
     col_names = data.columns
     col_names_x = [cname for cname in col_names 
                     if cname not in ["RecordID", "Length_of_stay"]]
-    X = utils.simple_pp(data[col_names_x], do_poly=False).values
+    X = utils.simple_pp(data[col_names_x], do_poly=True).values
     y = data["Length_of_stay"].values
     return X, y
 
 def get_mortdata():
     data = pd.read_csv("data/featureSet3_48.csv")
-    outcomes = pd.read_csv("data/outcomes-a.txt")
+    outcomes = pd.read_csv("data/Outcomes-a.txt")
     outcomes = outcomes[['RecordID', 'In-hospital_death']]
     data = pd.merge(data, outcomes, how='inner', on='RecordID')
     col_names = data.columns
     col_names_x = [cname for cname in col_names 
                     if cname not in ["RecordID", "Length_of_stay", 
                                         "In-hospital_death"]]
-    X = utils.simple_pp(data[col_names_x], do_poly=False).values
+    X = utils.simple_pp(data[col_names_x], do_poly=True).values
     y = data["In-hospital_death"].values
     return X, y
 
@@ -69,7 +75,8 @@ def get_ca6hrdata():
     X = utils.simple_pp(data.drop(columns="ca")).values
     return X, y
 
-def regtask(X, y, n_estimators, learning_rate, max_depth, n_btstrp):
+def regtask(X, y, n_estimators, learning_rate, max_depth, n_btstrp, 
+        has_missing=True):
     models = {"0. PaloBoost": PaloBoost(distribution="gaussian",
                         n_estimators=n_estimators,
                         learning_rate=learning_rate,
@@ -85,19 +92,26 @@ def regtask(X, y, n_estimators, learning_rate, max_depth, n_btstrp):
                     learning_rate=learning_rate,
                     max_depth=max_depth, 
                     subsample=0.7)}
-    perf_df = pd.DataFrame(columns=["0. PaloBoost", "1. SGTB-Bonsai",
-                                    "2. XGBoost", "nEst", "idx"])
+    if not has_missing:
+        models["3. Scikit-Learn"] = GradientBoostingRegressor(
+                                        n_estimators=n_estimators,
+                                        learning_rate=learning_rate,
+                                        max_depth=max_depth,
+                                        subsample=0.7)
+
+    perf_df = pd.DataFrame(columns=["model", "value", "n_est", "b_idx"])
     for idx in range(n_btstrp):
         X_train, X_test, y_train, y_test = train_test_split(X, y, 
-                                                test_size = 0.5,
+                                                test_size = 0.2,
                                                 random_state=idx)
         df = utils.get_reg_perf(models, X_train, y_train, 
-                                        X_test, y_test, n_estimators)
-        df['idx'] = idx
-        perf_df = perf_df.append(df)
+                                X_test, y_test, n_estimators)
+        df['b_idx'] = idx
+        perf_df = perf_df.append(df, sort=True)
     return perf_df
 
-def clstask(X, y, n_estimators, learning_rate, max_depth, n_btstrp):
+def clstask(X, y, n_estimators, learning_rate, max_depth, n_btstrp, 
+            has_missing=True):
     models = {"0. PaloBoost": PaloBoost(distribution="bernoulli",
                         n_estimators=n_estimators,
                         learning_rate=learning_rate,
@@ -113,87 +127,127 @@ def clstask(X, y, n_estimators, learning_rate, max_depth, n_btstrp):
                     learning_rate=learning_rate,
                     max_depth=max_depth, 
                     subsample=0.7)}
-    perf_df = pd.DataFrame(columns=["0. PaloBoost", "1. SGTB-Bonsai",
-                                    "2. XGBoost", "nEst", "idx"])
+    if not has_missing:
+        models["3. Scikit-Learn"] = GradientBoostingClassifier(
+                                        n_estimators=n_estimators,
+                                        learning_rate=learning_rate,
+                                        max_depth=max_depth,
+                                        subsample=0.7)
+    perf_df = pd.DataFrame(columns=["model", "value", "n_est", "b_idx"])
     for idx in range(n_btstrp):
         X_train, X_test, y_train, y_test = train_test_split(X, y, 
-                                                test_size = 0.5,
+                                                test_size = 0.2,
                                                 random_state=idx)
         df = utils.get_cls_perf(models, X_train, y_train, 
-                                        X_test, y_test, n_estimators)
-        df['idx'] = idx
-        perf_df = perf_df.append(df)
+                                X_test, y_test, n_estimators)
+        df['b_idx'] = idx
+        perf_df = perf_df.append(df, sort=True)
     return perf_df
 
 def run(dataname, task, n_estimators, learning_rate, max_depth, 
             n_btstrp=10):
 
     np.random.seed(1)
-    subsample = 0.7
 
     X, y = None, None
+    has_missing = False
     if dataname == "friedman":
         X, y = get_friedman()
     elif dataname == "hastie":
         X, y = get_hastie()
     elif dataname == "los":
         X, y = get_losdata()
+        has_missing = True
     elif dataname == "mort": 
         X, y = get_mortdata()
+        has_missing = True
     elif dataname == "ca6hr": 
         X, y = get_ca6hrdata()
 
     perf_df = None
     if task == "reg": 
         perf_df = regtask(X, y, n_estimators, 
-                            learning_rate, max_depth, n_btstrp)
+                            learning_rate, max_depth, 
+                            n_btstrp, has_missing)
     else:
         perf_df = clstask(X, y, n_estimators, 
-                            learning_rate, max_depth, n_btstrp)
+                            learning_rate, max_depth, 
+                            n_btstrp, has_missing)
 
     perf_df.to_csv(("results/" + dataname +
-                     "_{0}_{1}_{2}_{3}.csv".format(n_estimators,
-                        learning_rate,max_depth,subsample)), index=False)
+                     "_{0}_{1}_{2}.csv".format(n_estimators,
+                        learning_rate,max_depth)), index=False)
+
+def run_aux(learning_rate, max_depth, n_estimators=200):
+
+    X, y = get_friedman()
+    model = PaloBoost(distribution="gaussian",
+                        n_estimators=n_estimators,
+                        learning_rate=learning_rate,
+                        max_depth=max_depth, 
+                        subsample=0.7)
+    model.fit(X, y)
+    prune_df = pd.DataFrame(model.get_prune_stats())
+    prune_df.columns = ["iteration", "nodes_pre", "nodes_post"]
+    lr_df = pd.DataFrame(model.get_lr_stats())
+    lr_df.columns = ["iteration", "lr"] 
+
+    prune_df.to_csv("results/prune_{}_{}.csv".format(learning_rate, max_depth),
+                    index=False)
+    lr_df.to_csv("results/lr_{}_{}.csv".format(learning_rate, max_depth),
+                    index=False)
 
 if __name__ == "__main__":
 
+    run_aux(0.1, 3)
+    run_aux(0.5, 3)
+    run_aux(1.0, 3)
+    
     """
-    run("friedman", "reg", 500, 0.1, 5, 1)
-    run("friedman", "reg", 500, 0.5, 5, 1)
-    run("friedman", "reg", 500, 1.0, 5, 1)
-    run("friedman", "reg", 500, 0.1, 7, 1)
-    run("friedman", "reg", 500, 0.5, 7, 1)
-    run("friedman", "reg", 500, 1.0, 7, 1)
-
-    run("hastie", "cls", 500, 0.1, 5, 1)
-    run("hastie", "cls", 500, 0.5, 5, 1)
-    run("hastie", "cls", 500, 1.0, 5, 1)
-    run("hastie", "cls", 500, 0.1, 7, 1)
-    run("hastie", "cls", 500, 0.5, 7, 1)
-    run("hastie", "cls", 500, 1.0, 7, 1)
+    run("friedman", "reg", 200, 0.1, 5)
+    run("friedman", "reg", 200, 0.5, 5)
+    run("friedman", "reg", 200, 1.0, 5)
+    run("friedman", "reg", 200, 0.1, 4)
+    run("friedman", "reg", 200, 0.5, 4)
+    run("friedman", "reg", 200, 1.0, 4)
+    run("friedman", "reg", 200, 0.1, 3)
+    run("friedman", "reg", 200, 0.5, 3)
+    run("friedman", "reg", 200, 1.0, 3)
+    run("hastie", "cls", 200, 0.1, 5)
+    run("hastie", "cls", 200, 0.5, 5)
+    run("hastie", "cls", 200, 1.0, 5)
+    run("hastie", "cls", 200, 0.1, 4)
+    run("hastie", "cls", 200, 0.5, 4)
+    run("hastie", "cls", 200, 1.0, 4)
+    run("hastie", "cls", 200, 0.1, 3)
+    run("hastie", "cls", 200, 0.5, 3)
+    run("hastie", "cls", 200, 1.0, 3)
+    run("los", "reg", 200, 0.1, 5)
+    run("los", "reg", 200, 0.5, 5)
+    run("los", "reg", 200, 1.0, 5)
+    run("los", "reg", 200, 0.1, 4)
+    run("los", "reg", 200, 0.5, 4)
+    run("los", "reg", 200, 1.0, 4)
+    run("los", "reg", 200, 0.1, 3)
+    run("los", "reg", 200, 0.5, 3)
+    run("los", "reg", 200, 1.0, 3)
+    run("mort", "cls", 200, 0.1, 5)
+    run("mort", "cls", 200, 0.5, 5)
+    run("mort", "cls", 200, 1.0, 5)
+    run("mort", "cls", 200, 0.1, 4)
+    run("mort", "cls", 200, 0.5, 4)
+    run("mort", "cls", 200, 1.0, 4)
+    run("mort", "cls", 200, 0.1, 3)
+    run("mort", "cls", 200, 0.5, 3)
+    run("mort", "cls", 200, 1.0, 3)
+    run("ca6hr", "cls", 200, 0.1, 5)
+    run("ca6hr", "cls", 200, 0.5, 5)
+    run("ca6hr", "cls", 200, 1.0, 5)
+    run("ca6hr", "cls", 200, 0.1, 4)
+    run("ca6hr", "cls", 200, 0.5, 4)
+    run("ca6hr", "cls", 200, 1.0, 4)
+    run("ca6hr", "cls", 200, 0.1, 3)
+    run("ca6hr", "cls", 200, 0.5, 3)
+    run("ca6hr", "cls", 200, 1.0, 3)
     """
-
-    run("los", "reg", 500, 0.1, 5)
-    run("los", "reg", 500, 0.5, 5)
-    run("los", "reg", 500, 1.0, 5)
-    run("los", "reg", 500, 0.1, 7)
-    run("los", "reg", 500, 0.5, 7)
-    run("los", "reg", 500, 1.0, 7)
-
-    run("mort", "cls", 500, 0.1, 5)
-    run("mort", "cls", 500, 0.5, 5)
-    run("mort", "cls", 500, 1.0, 5)
-    run("mort", "cls", 500, 0.1, 7)
-    run("mort", "cls", 500, 0.5, 7)
-    run("mort", "cls", 500, 1.0, 7)
-
-    run("ca6hr", "cls", 500, 0.1, 5)
-    run("ca6hr", "cls", 500, 0.5, 5)
-    run("ca6hr", "cls", 500, 1.0, 5)
-    run("ca6hr", "cls", 500, 0.1, 7)
-    run("ca6hr", "cls", 500, 0.5, 7)
-    run("ca6hr", "cls", 500, 1.0, 7)
- 
-
-
 

@@ -7,46 +7,47 @@ from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import PolynomialFeatures
 
 def get_cls_perf(models, X_train, y_train, X_test, y_test, n_estimators):
-    performance = {}
+    perf_df = pd.DataFrame(columns=["model", "value", "n_est"])
     for name, model in models.items():
         start = time.time()
         model.fit(X_train, y_train)
         time_fit = time.time() - start
         print("  {0}: {1:.5f} sec...".format(name, time_fit))
-        performance[name] = []        
+        df = {"value": [], "n_est": []}
         if "XGBoost" not in name:
             for i, y_hat_i in enumerate(model.staged_predict_proba(X_test)):
-                performance[name].append(roc_auc_score(y_test, 
-                                                        y_hat_i[:,1]))
+                df["value"].append(roc_auc_score(y_test, y_hat_i[:,1]))
+                df["n_est"].append(i)
         else:
             for i in range(n_estimators):
                 y_hat_i = model.predict_proba(X_test, ntree_limit=i+1)
-                performance[name].append(roc_auc_score(y_test, 
-                                                        y_hat_i[:,1]))
-    perf_df = pd.DataFrame(performance)
-    perf_df['nEst'] = range(n_estimators)
-
+                df["value"].append(roc_auc_score(y_test, y_hat_i[:,1]))
+                df["n_est"].append(i)
+        df = pd.DataFrame(df)
+        df["model"] = name
+        perf_df = perf_df.append(df, sort=True)
     return perf_df
 
 def get_reg_perf(models, X_train ,y_train, X_test, y_test, n_estimators):
-    performance = {}
+    perf_df = pd.DataFrame(columns=["model", "value", "n_est"])
     for name, model in models.items():
         start = time.time()
         model.fit(X_train, y_train)
         time_fit = time.time() - start
         print("  {0}: {1:.5f} sec...".format(name, time_fit))
-        performance[name] = []
+        df = {"value": [], "n_est": []}
         if "XGBoost" not in name:
             for i, y_hat_i in enumerate(model.staged_predict(X_test)):
-                performance[name].append(
-                            np.clip(r2_score(y_test, y_hat_i), 0, 1))
+                df["value"].append(np.clip(r2_score(y_test, y_hat_i), 0, 1))
+                df["n_est"].append(i)
         else:
             for i in range(n_estimators):
                 y_hat_i = model.predict(X_test, ntree_limit=i+1)
-                performance[name].append(
-                            np.clip(r2_score(y_test, y_hat_i), 0, 1))
-    perf_df = pd.DataFrame(performance)
-    perf_df['nEst'] = range(n_estimators)
+                df["value"].append(np.clip(r2_score(y_test, y_hat_i), 0, 1))
+                df["n_est"].append(i)
+        df = pd.DataFrame(df)
+        df["model"] = name
+        perf_df = perf_df.append(df, sort=True)
     return perf_df
 
 def simple_pp(X, 
@@ -112,7 +113,7 @@ def simple_pp(X,
         X_list.append(X_num)
 
     X = pd.concat(X_list, axis=1)
-   
+    X = X.reset_index()
     print("- m_[features after basic prep]: {}".format(X.shape[1]))
 
     if do_poly:
