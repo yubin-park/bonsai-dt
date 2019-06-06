@@ -76,7 +76,7 @@ def get_ca6hrdata():
     return X, y
 
 def regtask(X, y, n_estimators, learning_rate, max_depth, n_btstrp, 
-        has_missing=True):
+        has_missing, test_size):
     models = {"0. PaloBoost": PaloBoost(distribution="gaussian",
                         n_estimators=n_estimators,
                         learning_rate=learning_rate,
@@ -102,7 +102,7 @@ def regtask(X, y, n_estimators, learning_rate, max_depth, n_btstrp,
     perf_df = pd.DataFrame(columns=["model", "value", "n_est", "b_idx"])
     for idx in range(n_btstrp):
         X_train, X_test, y_train, y_test = train_test_split(X, y, 
-                                                test_size = 0.2,
+                                                test_size=test_size,
                                                 random_state=idx)
         df = utils.get_reg_perf(models, X_train, y_train, 
                                 X_test, y_test, n_estimators)
@@ -111,7 +111,7 @@ def regtask(X, y, n_estimators, learning_rate, max_depth, n_btstrp,
     return perf_df
 
 def clstask(X, y, n_estimators, learning_rate, max_depth, n_btstrp, 
-            has_missing=True):
+            has_missing, test_size, add_noise):
     models = {"0. PaloBoost": PaloBoost(distribution="bernoulli",
                         n_estimators=n_estimators,
                         learning_rate=learning_rate,
@@ -136,8 +136,13 @@ def clstask(X, y, n_estimators, learning_rate, max_depth, n_btstrp,
     perf_df = pd.DataFrame(columns=["model", "value", "n_est", "b_idx"])
     for idx in range(n_btstrp):
         X_train, X_test, y_train, y_test = train_test_split(X, y, 
-                                                test_size = 0.2,
+                                                test_size=test_size,
                                                 random_state=idx)
+        if add_noise:
+            n_train = y_train.shape[0]
+            mask = np.random.rand(n_train) < 0.2 # 20%
+            y_train[mask] = 1 - y_train[mask] # flip
+
         df = utils.get_cls_perf(models, X_train, y_train, 
                                 X_test, y_test, n_estimators)
         df['b_idx'] = idx
@@ -145,11 +150,13 @@ def clstask(X, y, n_estimators, learning_rate, max_depth, n_btstrp,
     return perf_df
 
 def run(dataname, task, n_estimators, learning_rate, max_depth, 
+            add_noise=False,
             n_btstrp=10):
 
     np.random.seed(1)
 
     X, y = None, None
+    test_size = 0.2
     has_missing = False
     if dataname == "friedman":
         X, y = get_friedman()
@@ -168,15 +175,24 @@ def run(dataname, task, n_estimators, learning_rate, max_depth,
     if task == "reg": 
         perf_df = regtask(X, y, n_estimators, 
                             learning_rate, max_depth, 
-                            n_btstrp, has_missing)
+                            n_btstrp, has_missing, 
+                            test_size)
     else:
         perf_df = clstask(X, y, n_estimators, 
                             learning_rate, max_depth, 
-                            n_btstrp, has_missing)
+                            n_btstrp, has_missing, 
+                            test_size, add_noise)
+    fn = "results/_.csv"
+    if add_noise:
+        fn = ("results/" + dataname + 
+                "_{0}_{1}_{2}_noised.csv".format(n_estimators,
+                        learning_rate,max_depth))
+    else:
+        fn = ("results/" + dataname + 
+                "_{0}_{1}_{2}.csv".format(n_estimators,
+                        learning_rate,max_depth))
 
-    perf_df.to_csv(("results/" + dataname +
-                     "_{0}_{1}_{2}.csv".format(n_estimators,
-                        learning_rate,max_depth)), index=False)
+    perf_df.to_csv(fn, index=False)
 
 def run_aux(learning_rate, max_depth, n_estimators=200):
 
@@ -199,11 +215,11 @@ def run_aux(learning_rate, max_depth, n_estimators=200):
 
 if __name__ == "__main__":
 
+    """
     run_aux(0.1, 3)
     run_aux(0.5, 3)
     run_aux(1.0, 3)
     
-    """
     run("friedman", "reg", 200, 0.1, 5)
     run("friedman", "reg", 200, 0.5, 5)
     run("friedman", "reg", 200, 1.0, 5)
@@ -250,4 +266,28 @@ if __name__ == "__main__":
     run("ca6hr", "cls", 200, 0.5, 3)
     run("ca6hr", "cls", 200, 1.0, 3)
     """
+
+    run("ca6hr", "cls", 200, 0.1, 5, add_noise=True)
+    run("ca6hr", "cls", 200, 0.5, 5, add_noise=True)
+    run("ca6hr", "cls", 200, 1.0, 5, add_noise=True)
+    run("ca6hr", "cls", 200, 0.1, 4, add_noise=True)
+    run("ca6hr", "cls", 200, 0.5, 4, add_noise=True)
+    run("ca6hr", "cls", 200, 1.0, 4, add_noise=True)
+    run("ca6hr", "cls", 200, 0.1, 3, add_noise=True)
+    run("ca6hr", "cls", 200, 0.5, 3, add_noise=True)
+    run("ca6hr", "cls", 200, 1.0, 3, add_noise=True)
+
+
+    run("mort", "cls", 200, 0.1, 5, add_noise=True)
+    run("mort", "cls", 200, 0.5, 5, add_noise=True)
+    run("mort", "cls", 200, 1.0, 5, add_noise=True)
+    run("mort", "cls", 200, 0.1, 4, add_noise=True)
+    run("mort", "cls", 200, 0.5, 4, add_noise=True)
+    run("mort", "cls", 200, 1.0, 4, add_noise=True)
+    run("mort", "cls", 200, 0.1, 3, add_noise=True)
+    run("mort", "cls", 200, 0.5, 3, add_noise=True)
+    run("mort", "cls", 200, 1.0, 3, add_noise=True)
+
+
+
 
